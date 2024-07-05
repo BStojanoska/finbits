@@ -1,5 +1,5 @@
 <template>
-    <div>Index page</div>
+    <div class="text-xl">All your financial lists</div>
 </template>
 
 <script setup lang="ts">

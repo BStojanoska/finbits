@@ -1,7 +1,19 @@
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
   devtools: { enabled: true },
-  modules: ["@nuxt/ui", "@nuxtjs/supabase"],
+  modules: [
+    "@nuxt/ui",
+    "@nuxtjs/supabase",
+    [
+      "@nuxtjs/google-fonts",
+      {
+        families: {
+          "Dancing Script": [700],
+          Rubik: [400],
+        }
+      },
+    ],
+  ],
   supabase: {
     // Options
     url: process.env.SUPABASE_URL,
