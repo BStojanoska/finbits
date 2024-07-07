@@ -3,5 +3,10 @@
 </template>
 
 <script setup lang="ts">
-
+useHead({
+  titleTemplate: 'FinBits',
+  meta: [
+    { name: 'FinBits', content: 'Financial lists' }
+  ],
+})
 </script>

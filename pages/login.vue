@@ -1,4 +1,9 @@
 <script setup lang="ts">
+useHead({
+  titleTemplate: "FinBits | Login",
+  meta: [{ name: "FinBits", content: "Financial lists" }],
+});
+
 definePageMeta({
   layout: "login",
 });

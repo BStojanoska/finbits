@@ -9,8 +9,8 @@ export default defineNuxtConfig({
       {
         families: {
           "Dancing Script": [700],
-          Rubik: [400],
-        }
+          Roboto: [400],
+        },
       },
     ],
   ],
