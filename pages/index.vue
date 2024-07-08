@@ -4,7 +4,7 @@
   <div v-for="list in lists?.body">
     <UCard
       class="mt-5 hover:cursor-pointer"
-      @click="router.push({ path: `/${list?.id}` })"
+      @click="router.push({ path: `/fin/${list?.id}` })"
     >
       <template #header>
         {{ list?.name }}

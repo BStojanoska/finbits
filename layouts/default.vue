@@ -14,7 +14,7 @@
           icon="i-heroicons-plus-20-solid"
           @click="router.push({ path: '/new' })"
         >
-          <span class="mx-auto">New</span>
+          <span class="mx-auto">New list</span>
         </UButton>
       </div>
       <div class="px-5 py-16">
