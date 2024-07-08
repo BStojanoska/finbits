@@ -8,6 +8,7 @@
       <UButton
         class="flex-none m-auto my-5 px-5"
         type="submit"
+        :loading="creatingList"
         @click="createList"
         >Save</UButton
       >
@@ -20,8 +21,12 @@ definePageMeta({
   title: "Create a list",
 });
 
+const toast = useToast();
+const router = useRouter();
+
 const description = ref("Create a new list");
 const name = ref("");
+const creatingList = ref(false);
 
 useHead({
   titleTemplate: "FinBits | Create a list",
@@ -29,14 +34,23 @@ useHead({
 });
 
 const createList = async () => {
-  console.log("Creating a new list");
+  creatingList.value = true;
 
-  const response = await $fetch("/api/fin", {
-    method: "POST",
-    headers: useRequestHeaders(["cookie"]),
-    body: JSON.stringify({
-      name: name.value.trim(),
-    }),
-  });
+  try {
+    const response = await $fetch("/api/fin", {
+      method: "POST",
+      headers: useRequestHeaders(["cookie"]),
+      body: JSON.stringify({
+        name: name.value.trim(),
+      }),
+    });
+
+    toast.add({ title: "List created successfully!" });
+    router.push({ path: "/" });
+  } catch (e) {
+    toast.add({ title: "There was an error creating the list..." + e });
+  } finally {
+    creatingList.value = false;
+  }
 };
 </script>

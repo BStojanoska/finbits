@@ -7,10 +7,16 @@ useHead({
 definePageMeta({
   layout: "login",
 });
+const toast = useToast();
 const supabase = useSupabaseClient();
 const email = ref("");
+const clicked = ref(false);
 
 const signInWithOtp = async () => {
+  if (clicked.value) return;
+
+  clicked.value = true;
+
   const { error } = await supabase.auth.signInWithOtp({
     email: email.value,
     options: {
@@ -18,6 +24,8 @@ const signInWithOtp = async () => {
     },
   });
   if (error) console.log(error);
+
+  toast.add({ title: 'Check your inbox for a sign in link!' })
 };
 </script>
 <template>
@@ -32,6 +40,6 @@ const signInWithOtp = async () => {
       autofocus
       autocomplete="email"
     />
-    <UButton @click="signInWithOtp" class="mt-5">Sign In with E-Mail</UButton>
+    <UButton @click="signInWithOtp" class="mt-5" :disabled="clicked">Sign In with E-Mail</UButton>
   </div>
 </template>

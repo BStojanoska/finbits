@@ -4,12 +4,17 @@ import { Database } from "~/types/supabase";
 export default defineEventHandler(async (event) => {
   // Save the event data to the database
   const client = await serverSupabaseClient<Database>(event);
-  const body = await readBody(event);
   const user = await client.auth.getUser();
 
-  await client
+  const results = await client
     .from("fins")
-    .insert({ user_id: user.data.user?.id, name: body.name });
+    .select("id, name, created_at")
+    .eq("user_id", user?.data?.user?.id || "")
+    .order("created_at", { ascending: false });
 
-  return { status: 200, body: { message: "success" } };
+  if (results.data) {
+    return { status: 200, body: results.data };
+  } else {
+    throw new Error("Error fetching data!");
+  }
 });
