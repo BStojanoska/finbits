@@ -17,10 +17,6 @@
 </template>
 
 <script setup lang="ts">
-definePageMeta({
-  title: "Create a list",
-});
-
 const toast = useToast();
 const router = useRouter();
 
