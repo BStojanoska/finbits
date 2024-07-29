@@ -7,9 +7,6 @@ export default defineEventHandler(async (event) => {
   const body = await readBody(event);
   const user = await client.auth.getUser();
   let categoryId = null;
-  const finId = event?.context?.params?.id;
-  console.log("finId", finId);
-  console.log("body", body);
 
   const { data: categoryData, error: categoryError } = await client
     .from("categories")
@@ -17,7 +14,6 @@ export default defineEventHandler(async (event) => {
     .eq("name", body.category)
     .limit(1);
 
-  console.log("categoryData", categoryData);
   if (categoryError) {
     throw new Error(categoryError.message);
   }
@@ -27,8 +23,12 @@ export default defineEventHandler(async (event) => {
       // insert category
       const { data: newCat, error } = await client
         .from("categories")
-        .insert({ name: body.category, user_id: user.data.user?.id });
-      console.log("new category", newCat);
+        .insert({ name: body.category, user_id: user.data.user?.id })
+        .select("*");
+
+      if (newCat && newCat?.length > 0) {
+        categoryId = newCat[0].id;
+      }
     } else {
       categoryId = categoryData[0].id;
     }
@@ -36,13 +36,17 @@ export default defineEventHandler(async (event) => {
     throw new Error(error.message);
   }
 
-    const { data, error } = await client
-      .from("bits")
-      .insert({ name: body.name, fin_id: Number(event?.context?.params?.id), amount: body.amount, note: body.note, category_id: categoryId });
+  const { data, error } = await client.from("bits").insert({
+    name: body.name,
+    fin_id: Number(event?.context?.params?.id),
+    amount: body.amount,
+    note: body.note,
+    category_id: categoryId,
+  });
 
-    if (error) {
-      throw new Error(error.message);
-    }
+  if (error) {
+    throw new Error(error.message);
+  }
 
   return { status: 200, body: { message: "success" } };
 });

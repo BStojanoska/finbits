@@ -4,13 +4,13 @@
     <form
       class="flex flex-col align-center justify-center w-[90%] md:w-[70%] lg:w-[50%] xl:w-[30%]"
     >
-      <UInput v-model="name" type="text" placeholder="Name"></UInput>
-      <UButton
+      <InputText v-model="name" type="text" placeholder="Name"></InputText>
+      <Button
         class="flex-none m-auto my-5 px-5"
         type="submit"
         :loading="creatingList"
         @click="createList"
-        >Save</UButton
+        >Save</Button
       >
     </form>
   </div>
@@ -41,10 +41,10 @@ const createList = async () => {
       }),
     });
 
-    toast.add({ title: "List created successfully!" });
+    toast.add({ summary: "List created successfully!", severity: "success" });
     router.push({ path: "/" });
   } catch (e) {
-    toast.add({ title: "There was an error creating the list..." + e });
+    toast.add({ summary: "There was an error creating the list..." + e, severity: "error" });
   } finally {
     creatingList.value = false;
   }

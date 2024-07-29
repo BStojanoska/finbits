@@ -1,26 +1,9 @@
 <template>
   <div class="text-2xl mb-5">{{ fin?.body?.name ?? "" }}</div>
-  <UDivider />
+  <Divider />
 
   <div class="my-5">
-    <form class="flex flex-wrap flex-row gap-3 justify-between items-center pb-5">
-      <UInput v-model="name" type="text" placeholder="What?"></UInput>
-      <UInput v-model="amount" type="number" placeholder="How much?"></UInput>
-      <UInput v-model="category" type="text" placeholder="Category"></UInput>
-      <UInput v-model="note" type="text" placeholder="Note"></UInput>
-      <UButton
-        class="flex-none"
-        type="submit"
-        icon="i-heroicons-plus-20-solid"
-        :loading="creating"
-        @click="createExpense"
-        >Add</UButton
-      >
-    </form>
-
     <div class="my-5">
-      <div class="text-xl mb-5">Expenses</div>
-
       <div class="grid grid-cols-1 gap-3">
         <div
           v-for="bit in bits?.results"
@@ -33,11 +16,57 @@
             <div>{{ bit.categories?.name }}</div>
             <div>{{ bit.note }}</div>
           </div>
-          <UDivider />
+          <Divider />
         </div>
       </div>
     </div>
   </div>
+  <Button
+    class="fixed bottom-[20px] right-[20px]"
+    rounded
+    @click="visible = true"
+  >
+    <template #icon>
+      <font-awesome-icon icon="fa-solid fa-plus" />
+    </template>
+  </Button>
+
+  <Dialog
+    v-model:visible="visible"
+    modal
+    header="Add expense"
+    class="w-[100vw] md:w-[75wv] lg:w-[30vw]"
+  >
+    <form class="flex flex-col gap-3 justify-between items-center pb-5">
+      <InputText v-model="name" type="text" placeholder="What?"></InputText>
+      <InputText
+        v-model="amount"
+        type="number"
+        placeholder="How much?"
+      ></InputText>
+      <InputText
+        v-model="category"
+        type="text"
+        placeholder="Category"
+      ></InputText>
+      <InputText v-model="note" type="text" placeholder="Note"></InputText>
+
+      <div class="flex justify-end gap-2">
+        <Button
+          type="button"
+          label="Cancel"
+          severity="secondary"
+          @click="visible = false"
+        ></Button>
+        <Button
+          type="button"
+          label="Save"
+          :loading="creating"
+          @click="createExpense"
+        ></Button>
+      </div>
+    </form>
+  </Dialog>
 </template>
 
 <script setup lang="ts">
@@ -48,6 +77,7 @@ const note = ref("");
 const category = ref("");
 const creating = ref(false);
 const toast = useToast();
+const visible = ref(false);
 const finId = ref(route?.params?.id || "");
 
 const { data: fin }: { data: any } = useFetch(`/api/fin/${route?.params?.id}`, {
@@ -94,11 +124,15 @@ const createExpense = async (e: Event) => {
 
     refresh();
 
-    toast.add({ title: "Expense added successfully!" });
+    toast.add({ summary: "Expense added successfully!", severity: "success" });
   } catch (e) {
-    toast.add({ title: "There was an error adding the expense..." + e });
+    toast.add({
+      summary: "There was an error adding the expense..." + e,
+      severity: "error",
+    });
   } finally {
     creating.value = false;
+    visible.value = false;
   }
 };
 </script>
