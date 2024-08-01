@@ -1,23 +1,20 @@
 <template>
   <div class="text-2xl mb-5">{{ fin?.body?.name ?? "" }}</div>
-  <Divider />
 
-  <div class="my-5">
-    <div class="my-5">
-      <div class="grid grid-cols-1 gap-3">
-        <div
-          v-for="bit in bits?.results"
-          :key="bit.id"
-          class="flex flex-col justify-between"
-        >
-          <div class="grid grid-cols-4 mb-5">
-            <div>{{ bit.name }}</div>
-            <div>{{ bit.amount }}</div>
-            <div>{{ bit.categories?.name }}</div>
-            <div>{{ bit.note }}</div>
-          </div>
-          <Divider />
-        </div>
+  <div v-for="(bits, date) in formattedBits" :key="date">
+    <div class="font-bold border-b border-gray-600 my-2">
+      {{ date }}
+    </div>
+    <div
+      v-for="bit in bits"
+      :key="bit.id"
+      class="flex flex-col justify-between h-6 hover:cursor-pointer"
+      @click="selectedBit = bit"
+    >
+      <div class="grid grid-cols-3">
+        <div>{{ bit.name }}</div>
+        <div>{{ bit.amount }}</div>
+        <div>{{ bit.categories?.name }}</div>
       </div>
     </div>
   </div>
@@ -31,54 +28,22 @@
     </template>
   </Button>
 
-  <Dialog
-    v-model:visible="visible"
-    modal
-    header="Add expense"
-    class="w-[100vw] md:w-[75wv] lg:w-[30vw]"
-  >
-    <form class="flex flex-col gap-3 justify-between items-center pb-5">
-      <InputText v-model="name" type="text" placeholder="What?"></InputText>
-      <InputText
-        v-model="amount"
-        type="number"
-        placeholder="How much?"
-      ></InputText>
-      <InputText
-        v-model="category"
-        type="text"
-        placeholder="Category"
-      ></InputText>
-      <InputText v-model="note" type="text" placeholder="Note"></InputText>
-
-      <div class="flex justify-end gap-2">
-        <Button
-          type="button"
-          label="Cancel"
-          severity="secondary"
-          @click="visible = false"
-        ></Button>
-        <Button
-          type="button"
-          label="Save"
-          :loading="creating"
-          @click="createExpense"
-        ></Button>
-      </div>
-    </form>
-  </Dialog>
+  <ExpenseForm
+    :openDialog="visible"
+    :refreshItems="refresh"
+    :selectedBit="selectedBit"
+    @update:openDialog="($event) => (visible = $event)"
+  />
 </template>
 
 <script setup lang="ts">
+import { format } from "date-fns";
+
 const route = useRoute();
-const name = ref("");
-const amount = ref("");
-const note = ref("");
-const category = ref("");
-const creating = ref(false);
-const toast = useToast();
-const visible = ref(false);
 const finId = ref(route?.params?.id || "");
+const formattedBits = ref();
+const visible = ref(false);
+const selectedBit = ref(null);
 
 const { data: fin }: { data: any } = useFetch(`/api/fin/${route?.params?.id}`, {
   method: "GET",
@@ -98,41 +63,27 @@ const { data: bits, refresh } = await useAsyncData(
   }
 );
 
-// const { data: categories } = useFetch("/api/categories", { method: "GET" });
+const formatByDate = (bits: any) => {
+  if (!bits) return;
 
-const createExpense = async (e: Event) => {
-  e.preventDefault();
-  creating.value = true;
+  const obj: { [key: string]: any[] } = {};
 
-  const payload = {
-    name: name.value.trim(),
-    amount: amount.value.toString().trim(),
-    note: note.value.trim(),
-    category: category.value.trim(),
-  };
-
-  try {
-    const response = await $fetch(`/api/fin/${route?.params?.id}/bit`, {
-      method: "POST",
-      headers: useRequestHeaders(["cookie"]),
-      body: JSON.stringify(payload),
-    });
-
-    if (response.status !== 200) {
-      throw new Error("Error adding expense...");
+  bits.results.forEach((bit: any) => {
+    const formattedDate = format(bit.created_at, "dd/MM/yyyy").toString();
+    if (!obj[formattedDate]) {
+      obj[formattedDate] = [];
     }
+    obj[formattedDate].push(bit);
+  });
 
-    refresh();
-
-    toast.add({ summary: "Expense added successfully!", severity: "success" });
-  } catch (e) {
-    toast.add({
-      summary: "There was an error adding the expense..." + e,
-      severity: "error",
-    });
-  } finally {
-    creating.value = false;
-    visible.value = false;
-  }
+  return obj;
 };
+
+watch(
+  bits,
+  (value) => {
+    formattedBits.value = formatByDate(value);
+  },
+  { deep: true, immediate: true }
+);
 </script>
