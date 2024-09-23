@@ -36,17 +36,44 @@ export default defineEventHandler(async (event) => {
     throw new Error(error.message);
   }
 
-  const { data, error } = await client.from("bits").insert({
-    name: body.name,
-    fin_id: Number(event?.context?.params?.id),
-    amount: body.amount,
-    note: body.note,
-    category_id: categoryId,
-  });
+  try {
+    if (body.id) {
+      const { data, error } = await client
+        .from("bits")
+        .update({
+          name: body.name,
+          amount: body.amount,
+          note: body.note,
+          date: body.date,
+          category_id: categoryId,
+        })
+        .eq("id", body.id)
+        .select("*");
 
-  if (error) {
+      console.log("data", data);
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { status: 200, body: { message: "success" } };
+    } else {
+      const { data, error } = await client.from("bits").insert({
+        name: body.name,
+        fin_id: Number(event?.context?.params?.id),
+        amount: body.amount,
+        note: body.note,
+        date: body.date,
+        category_id: categoryId,
+      });
+
+      if (error) {
+        throw new Error(error.message);
+      }
+
+      return { status: 200, body: { message: "success" } };
+    }
+  } catch (error: any) {
     throw new Error(error.message);
   }
-
-  return { status: 200, body: { message: "success" } };
 });

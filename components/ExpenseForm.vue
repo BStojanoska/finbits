@@ -2,7 +2,7 @@
   <Dialog
     v-bind:visible="props.openDialog"
     @update:visible="emit('update:openDialog', $event)"
-    :header="`${bitId ? 'Edit' : 'Add'} expense`"
+    :header="`${selectedBit?.id ? 'Edit' : 'Add'} expense`"
     modal
     class="w-[100vw] md:w-[75wv] lg:w-[30vw]"
   >
@@ -58,7 +58,6 @@ const date = ref(new Date());
 const note = ref("");
 const category = ref("");
 const categories = ref();
-const bitId = ref(null);
 const route = useRoute();
 const emit = defineEmits(["update:openDialog"]);
 
@@ -101,7 +100,6 @@ const search = (event: any) => {
 };
 
 const resetForm = () => {
-  bitId.value = null;
   name.value = "";
   amount.value = "";
   date.value = new Date();
@@ -114,16 +112,23 @@ const createExpense = async (e: Event) => {
   e.preventDefault();
   creating.value = true;
 
+  console.log('category', category.value);
   const payload = {
+    id: props.selectedBit?.id || null,
     name: name.value.trim(),
     amount: amount.value.toString().trim(),
     note: note.value.trim(),
     category: category.value.trim(),
   };
 
+  let method = "POST" as "POST" | "PUT";
+  if (props.selectedBit?.id) {
+    method = "PUT";
+  }
+
   try {
     const response = await $fetch(`/api/fin/${route?.params?.id}/bit`, {
-      method: "POST",
+      method,
       headers: useRequestHeaders(["cookie"]),
       body: JSON.stringify(payload),
     });
@@ -135,10 +140,18 @@ const createExpense = async (e: Event) => {
     resetForm();
     props.refreshItems();
 
-    toast.add({ summary: "Expense added successfully!", severity: "success" });
+    toast.add({
+      summary: `Expense ${
+        props.selectedBit?.id ? "edited" : "added"
+      } successfully!`,
+      severity: "success",
+    });
   } catch (e) {
     toast.add({
-      summary: "There was an error adding the expense..." + e,
+      summary:
+        `There was an error ${
+          props.selectedBit?.id ? "updating" : "adding"
+        } the expense...` + e,
       severity: "error",
     });
   } finally {
@@ -150,7 +163,6 @@ const createExpense = async (e: Event) => {
 watch(
   () => props.selectedBit,
   (value) => {
-    console.log(value.id);
     if (value) {
       editBit(value);
     }
@@ -160,12 +172,11 @@ watch(
 const editBit = (item: any) => {
   const cat = categories.value.find((c: any) => c.id === item.category);
 
-  bitId.value = item.id;
   name.value = item.name;
   amount.value = item.amount;
-  date.value = new Date(item.created_at);
+  date.value = props.selectedBit?.id ? item.date : new Date(item.created_at);
   note.value = item.note;
-  category.value = cat;
+  category.value = cat.name;
   emit("update:openDialog", true);
 };
 </script>

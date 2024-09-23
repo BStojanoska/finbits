@@ -16,6 +16,7 @@
   <Button
     class="fixed bottom-[20px] right-[20px]"
     rounded
+    style="font-size: 1.5rem; padding: 2rem"
     @click="router.push({ path: '/new' })"
   >
     <template #icon>

@@ -17,8 +17,6 @@ export default defineEventHandler(async (event) => {
 
   const results: BitWithCategory = data ?? [];
 
-  console.log("results", results);
-
   if (error) {
     throw new Error(error.message);
   }
