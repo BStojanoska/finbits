@@ -2,6 +2,15 @@
 import Aura from "@primevue/themes/aura";
 
 export default defineNuxtConfig({
+  app: {
+    head: {
+      script: [
+        {
+          src: "https://accounts.google.com/gsi/client",
+        },
+      ],
+    },
+  },
   devtools: { enabled: true },
   css: [
     "@fortawesome/fontawesome-svg-core/styles.css",
@@ -26,7 +35,11 @@ export default defineNuxtConfig({
         },
       },
     ],
+    'nuxt-vue3-google-signin',
   ],
+  googleSignIn: {
+    clientId: process.env.GOOGLE_CLIENT_ID,
+  },
   primevue: {
     options: {
       theme: {

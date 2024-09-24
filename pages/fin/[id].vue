@@ -83,6 +83,7 @@ const formatByDate = (bits: any) => {
 watch(
   bits,
   (value) => {
+    console.log('val', value);
     formattedBits.value = formatByDate(value);
   },
   { deep: true, immediate: true }

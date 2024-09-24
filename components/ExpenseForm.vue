@@ -56,7 +56,7 @@ const name = ref("");
 const amount = ref("");
 const date = ref(new Date());
 const note = ref("");
-const category = ref("");
+const category = ref();
 const categories = ref();
 const route = useRoute();
 const emit = defineEmits(["update:openDialog"]);
@@ -118,7 +118,7 @@ const createExpense = async (e: Event) => {
     name: name.value.trim(),
     amount: amount.value.toString().trim(),
     note: note.value.trim(),
-    category: category.value.trim(),
+    category: category.value?.name ? category.value.name.trim() : category.value.trim(),
   };
 
   let method = "POST" as "POST" | "PUT";
@@ -174,7 +174,7 @@ const editBit = (item: any) => {
 
   name.value = item.name;
   amount.value = item.amount;
-  date.value = props.selectedBit?.id ? item.date : new Date(item.created_at);
+  date.value = props.selectedBit?.id ? new Date(item.created_at) : new Date();
   note.value = item.note;
   category.value = cat.name;
   emit("update:openDialog", true);
