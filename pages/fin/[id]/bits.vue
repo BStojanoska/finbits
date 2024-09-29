@@ -19,9 +19,9 @@
     </div>
   </div>
   <Button
-    class="fixed bottom-[20px] right-[20px]"
+    class="bottom-[20px] right-[20px]"
     rounded
-    style="font-size: 1.5rem; padding: 2rem"
+    style="font-size: 1.5rem; padding: 2rem; position: fixed;"
     @click="visible = true"
   >
     <template #icon>
@@ -83,7 +83,6 @@ const formatByDate = (bits: any) => {
 watch(
   bits,
   (value) => {
-    console.log('val', value);
     formattedBits.value = formatByDate(value);
   },
   { deep: true, immediate: true }
