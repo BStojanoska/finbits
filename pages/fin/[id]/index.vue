@@ -4,7 +4,7 @@
     <form
       class="flex flex-col align-center justify-center w-[90%] md:w-[70%] lg:w-[50%] xl:w-[30%]"
     >
-      <InputText v-model="name" type="text" placeholder="Name"></InputText>
+      <InputText v-model="name" type="text" placeholder="Name" :key="data?.body?.name ?? 'new'"></InputText>
       <Button
         class="flex-none m-auto my-5 px-5"
         type="submit"
@@ -21,21 +21,21 @@ const toast = useToast();
 
 const finId = ref(useRoute().params.id);
 
-const { data, error } = useAsyncData<{
+const { data, error } = useFetch<{
   status: number;
   body: { name: string };
-}>(
-  "finId",
-  async () =>
-    await $fetch(`/api/fin/${finId.value}`, {
-      headers: useRequestHeaders(["cookie"]),
-    })
-);
+}>(`/api/fin/${finId.value}`, {
+  method: "GET",
+});
+
+const name = ref("");
+watchEffect(() => {
+  name.value = data.value?.body?.name || "";
+});
 
 const description = computed(() =>
   data.value?.status === 200 ? `Edit list` : `Create a new list`
 );
-const name = ref(data.value?.body?.name || "");
 const creatingList = ref(false);
 
 useHead({

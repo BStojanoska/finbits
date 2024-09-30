@@ -12,6 +12,11 @@ export default defineNuxtConfig({
     },
   },
   devtools: { enabled: true },
+  routeRules: {
+    '/fin/**': {
+      ssr: false,
+    }
+  },
   css: [
     "@fortawesome/fontawesome-svg-core/styles.css",
     "~/assets/css/main.css",
