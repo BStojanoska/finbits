@@ -44,13 +44,11 @@ export default defineEventHandler(async (event) => {
           name: body.name,
           amount: body.amount,
           note: body.note,
-          date: body.date,
+          created_at: body.date,
           category_id: categoryId,
         })
         .eq("id", body.id)
         .select("*");
-
-      console.log("data", data);
 
       if (error) {
         throw new Error(error.message);
@@ -63,8 +61,9 @@ export default defineEventHandler(async (event) => {
         fin_id: Number(event?.context?.params?.id),
         amount: body.amount,
         note: body.note,
-        date: body.date,
+        created_at: body.date,
         category_id: categoryId,
+        user_id: user.data.user?.id,
       });
 
       if (error) {

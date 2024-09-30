@@ -1,27 +1,33 @@
 <template>
   <div class="text-2xl mb-5">{{ fin?.body?.name ?? "" }}</div>
 
-  <div v-for="(bits, date) in formattedBits" :key="date">
-    <div class="font-bold border-b border-gray-600 my-2">
-      {{ date }}
-    </div>
-    <div
-      v-for="bit in bits"
-      :key="bit.id"
-      class="flex flex-col justify-between h-6 hover:cursor-pointer"
-      @click="selectedBit = bit"
-    >
-      <div class="grid grid-cols-3">
-        <div>{{ bit.name }}</div>
-        <div>{{ bit.amount }}</div>
-        <div>{{ bit.categories?.name }}</div>
+  <div v-if="Object.keys(formattedBits).length > 0">
+    <div v-for="(bits, date) in formattedBits" :key="date">
+      <div class="font-bold border-b border-gray-600 my-2">
+        {{ date }}
+      </div>
+      <div
+        v-for="bit in bits"
+        :key="bit.id"
+        class="flex flex-col justify-between h-6 hover:cursor-pointer"
+        @click="selectedBit = bit"
+      >
+        <div class="grid grid-cols-3">
+          <div>{{ bit.name }}</div>
+          <div>{{ bit.amount }}</div>
+          <div>{{ bit.categories?.name }}</div>
+        </div>
       </div>
     </div>
   </div>
+  <div v-else>
+    <span class="text-gray-400 italic">No expenses yet.</span>
+  </div>
+
   <Button
     class="bottom-[20px] right-[20px]"
     rounded
-    style="font-size: 1.5rem; padding: 2rem; position: fixed;"
+    style="font-size: 1.5rem; padding: 2rem; position: fixed"
     @click="visible = true"
   >
     <template #icon>
@@ -34,6 +40,7 @@
     :refreshItems="refresh"
     :selectedBit="selectedBit"
     @update:openDialog="($event) => (visible = $event)"
+    @update:selectedBit="($event) => (selectedBit = $event)"
   />
 </template>
 

@@ -59,7 +59,7 @@ const note = ref("");
 const category = ref();
 const categories = ref();
 const route = useRoute();
-const emit = defineEmits(["update:openDialog"]);
+const emit = defineEmits(["update:openDialog", "update:selectedBit"]);
 
 const props = withDefaults(
   defineProps<{
@@ -106,16 +106,17 @@ const resetForm = () => {
   note.value = "";
   category.value = "";
   filteredCategories.value = categories.value;
+  emit("update:selectedBit", null);
 };
 
 const createExpense = async (e: Event) => {
   e.preventDefault();
   creating.value = true;
 
-  console.log('category', category.value);
   const payload = {
     id: props.selectedBit?.id || null,
     name: name.value.trim(),
+    date: date.value.toISOString(),
     amount: amount.value.toString().trim(),
     note: note.value.trim(),
     category: category.value?.name ? category.value.name.trim() : category.value.trim(),
