@@ -29,7 +29,7 @@ export default defineEventHandler(async (event) => {
       return acc + parseFloat(bit.amount);
     }, 0);
 
-    totals[key] = new Intl.NumberFormat('de-De', {
+    totals[key] = new Intl.NumberFormat('de-DE', {
       style: "decimal",
       maximumFractionDigits: 2,
       minimumFractionDigits: 2,
