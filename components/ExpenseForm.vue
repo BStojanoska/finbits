@@ -1,7 +1,7 @@
 <template>
   <Dialog
     v-bind:visible="props.openDialog"
-    @update:visible="emit('update:openDialog', $event)"
+    @update:visible="updateVisible"
     :header="`${selectedBit?.id ? 'Edit' : 'Add'} expense`"
     modal
     class="w-[100vw] md:w-[75wv] lg:w-[30vw]"
@@ -11,11 +11,15 @@
       class="flex flex-col gap-3 justify-between items-center pb-5"
     >
       <InputText v-model="name" type="text" placeholder="What?"></InputText>
-      <InputText
+      <InputNumber
         v-model="amount"
+        :minFractionDigits="2"
+        :maxFractionDigits="2"
+        :min="0"
+        locale="de-DE"
         type="number"
         placeholder="How much?"
-      ></InputText>
+      ></InputNumber>
       <DatePicker v-model="date" dateFormat="dd/mm/yy" />
       <AutoComplete
         v-model="category"
@@ -31,10 +35,7 @@
           type="button"
           label="Cancel"
           severity="secondary"
-          @click="
-            emit('update:openDialog', false);
-            resetForm();
-          "
+          @click="updateVisible(false)"
         ></Button>
         <Button
           type="button"
@@ -48,12 +49,14 @@
 </template>
 
 <script setup lang="ts">
+import InputNumber from "primevue/inputnumber";
+
 const form = ref();
 const creating = ref(false);
 const toast = useToast();
 const filteredCategories = ref();
 const name = ref("");
-const amount = ref("");
+const amount = ref(0);
 const date = ref(new Date());
 const note = ref("");
 const category = ref();
@@ -99,9 +102,16 @@ const search = (event: any) => {
   }, 250);
 };
 
+const updateVisible = (value: boolean) => {
+  if (!value) {
+    resetForm();
+  }
+  emit("update:openDialog", value);
+};
+
 const resetForm = () => {
   name.value = "";
-  amount.value = "";
+  amount.value = 0;
   date.value = new Date();
   note.value = "";
   category.value = "";
@@ -119,7 +129,9 @@ const createExpense = async (e: Event) => {
     date: date.value.toISOString(),
     amount: amount.value.toString().trim(),
     note: note.value.trim(),
-    category: category.value?.name ? category.value.name.trim() : category.value.trim(),
+    category: category.value?.name
+      ? category.value.name.trim()
+      : category.value.trim(),
   };
 
   let method = "POST" as "POST" | "PUT";
@@ -146,6 +158,7 @@ const createExpense = async (e: Event) => {
         props.selectedBit?.id ? "edited" : "added"
       } successfully!`,
       severity: "success",
+      life: 5000,
     });
   } catch (e) {
     toast.add({
@@ -154,6 +167,7 @@ const createExpense = async (e: Event) => {
           props.selectedBit?.id ? "updating" : "adding"
         } the expense...` + e,
       severity: "error",
+      life: 5000,
     });
   } finally {
     creating.value = false;
@@ -174,7 +188,7 @@ const editBit = (item: any) => {
   const cat = categories.value.find((c: any) => c.id === item.category);
 
   name.value = item.name;
-  amount.value = item.amount;
+  amount.value = parseFloat(item.amount);
   date.value = props.selectedBit?.id ? new Date(item.created_at) : new Date();
   note.value = item.note;
   category.value = cat.name;

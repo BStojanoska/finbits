@@ -1,22 +1,36 @@
 <template>
   <div class="text-2xl mb-5">{{ fin?.body?.name ?? "" }}</div>
 
-  <div v-if="Object.keys(formattedBits).length > 0">
-    <div v-for="(bits, date) in formattedBits" :key="date">
-      <div class="font-bold border-b border-gray-600 my-2">
-        {{ date }}
-      </div>
-      <div
-        v-for="bit in bits"
-        :key="bit.id"
-        class="flex flex-col justify-between h-6 hover:cursor-pointer"
-        @click="selectedBit = bit"
-      >
-        <div class="grid grid-cols-3">
-          <div>{{ bit.name }}</div>
-          <div>{{ bit.amount }}</div>
-          <div>{{ bit.categories?.name }}</div>
+  <div
+    v-if="
+      bitsResponse?.results && Object.keys(bitsResponse?.results).length > 0
+    "
+  >
+    <div v-for="(bits, date) in bitsResponse?.results" :key="date">
+      <div class="grid grid-cols-3 font-bold border-b border-gray-600 my-2">
+        <div>{{ date }}</div>
+        <div>
+          {{ bitsResponse?.totals[date] }}
         </div>
+      </div>
+      <div class="grid grid-cols-3">
+        <template v-for="bit in bits" :key="bit.id">
+          <div class="hover:cursor-pointer" @click="selectedBit = bit">
+            {{ bit.name }}
+          </div>
+          <div class="hover:cursor-pointer" @click="selectedBit = bit">
+            {{
+              new Intl.NumberFormat("de-DE", {
+                style: "decimal",
+                maximumFractionDigits: 2,
+                minimumFractionDigits: 2,
+              }).format(bit.amount)
+            }}
+          </div>
+          <div class="hover:cursor-pointer" @click="selectedBit = bit">
+            {{ bit.categories?.name }}
+          </div>
+        </template>
       </div>
     </div>
   </div>
@@ -45,11 +59,8 @@
 </template>
 
 <script setup lang="ts">
-import { format } from "date-fns";
-
 const route = useRoute();
 const finId = ref(route?.params?.id || "");
-const formattedBits = ref();
 const visible = ref(false);
 const selectedBit = ref(null);
 
@@ -57,41 +68,16 @@ const { data: fin }: { data: any } = useFetch(`/api/fin/${route?.params?.id}`, {
   method: "GET",
 });
 
-const { data: bits, refresh } = await useAsyncData(
+const { data: bitsResponse, refresh } = await useAsyncData(
   "bits",
   async () => {
     const response = await $fetch(`/api/fin/${route?.params?.id}/bits`, {
       method: "GET",
-      params: { fin: route?.params?.id },
     });
     return response;
   },
   {
     watch: [finId],
   }
-);
-
-const formatByDate = (bits: any) => {
-  if (!bits) return;
-
-  const obj: { [key: string]: any[] } = {};
-
-  bits.results.forEach((bit: any) => {
-    const formattedDate = format(bit.created_at, "dd/MM/yyyy").toString();
-    if (!obj[formattedDate]) {
-      obj[formattedDate] = [];
-    }
-    obj[formattedDate].push(bit);
-  });
-
-  return obj;
-};
-
-watch(
-  bits,
-  (value) => {
-    formattedBits.value = formatByDate(value);
-  },
-  { deep: true, immediate: true }
 );
 </script>
