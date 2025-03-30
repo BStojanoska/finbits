@@ -40,8 +40,8 @@ const userId = ref('');
 const isLoading = ref(true);
 const isSigningOut = ref(false);
 
+initSuperTokensWebJS();
 onMounted(async () => {
-  initSuperTokensWebJS();
 
   try {
     const hasSession = await Session.doesSessionExist();

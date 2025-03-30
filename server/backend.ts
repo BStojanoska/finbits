@@ -10,7 +10,7 @@ export let backendConfig = (): TypeInput => {
     return {
         supertokens: {
             // this is the location of the SuperTokens core.
-            connectionURI: "https://try.supertokens.com",
+            connectionURI: process.env.SUPERTOKENS_CONNECTION_URI || "",
         },
         appInfo,
         // recipeList contains all the modules that you want to
@@ -26,9 +26,19 @@ export let backendConfig = (): TypeInput => {
                                 thirdPartyId: "google",
                                 clients: [
                                     {
-                                        clientId:
-                                            "1060725074195-kmeum4crr01uirfl2op9kd5acmi9jutn.apps.googleusercontent.com",
-                                        clientSecret: "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",
+                                        clientId: process.env.GOOGLE_CLIENT_ID || "",
+                                        clientSecret: process.env.GOOGLE_CLIENT_SECRET || "",
+                                    },
+                                ],
+                            },
+                        },
+                        {
+                            config: {
+                                thirdPartyId: "github",
+                                clients: [
+                                    {
+                                        clientId: process.env.GITHUB_CLIENT_ID || "",
+                                        clientSecret: process.env.GITHUB_CLIENT_SECRET || "",
                                     },
                                 ],
                             },
@@ -40,7 +50,6 @@ export let backendConfig = (): TypeInput => {
             Dashboard.init(),
             UserRoles.init(),
         ],
-        isInServerlessEnv: true,
         framework: "custom",
     };
 };

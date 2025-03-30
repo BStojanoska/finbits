@@ -12,7 +12,8 @@ export function initSuperTokensUI() {
             (window as any).supertokensUIThirdParty.init({
                 signInAndUpFeature: {
                     providers: [
-                        (window as any).supertokensUIThirdParty.Google.init(),
+                        (window as any).supertokensUIThirdParty.Github.init(),
+                        // (window as any).supertokensUIThirdParty.Google.init(),
                     ],
 
                 },

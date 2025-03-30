@@ -59,7 +59,6 @@
 import ConfirmDialog from "primevue/confirmdialog";
 import { useConfirm } from "primevue/useconfirm";
 import * as Session from "supertokens-web-js/recipe/session";
-import { initSuperTokensWebJS } from "../config/frontend";
 
 useHead({
   titleTemplate: "FinBits",
@@ -71,8 +70,6 @@ const toast = useToast();
 const userId = ref<string | null>(null);
 
 onMounted(async () => {
-  initSuperTokensWebJS();
-
   const session = await Session.doesSessionExist();
   if (!session) {
     router.push("/login");

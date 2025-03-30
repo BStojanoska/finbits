@@ -1,8 +1,9 @@
 import { withSession } from "supertokens-node/custom";
 import supertokens from "supertokens-node";
-
+import { ensureSuperTokensInit } from "../backend";
 export default defineEventHandler(async (event) => {
     try {
+        ensureSuperTokensInit();
         const request = await convertToRequest(event);
         await withSession(request, async (err, session) => {
             if (err) {
