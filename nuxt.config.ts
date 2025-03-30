@@ -44,7 +44,6 @@ export default defineNuxtConfig({
         },
       },
     ],
-    'nuxt-vue3-google-signin',
   ],
 
   googleSignIn: {
