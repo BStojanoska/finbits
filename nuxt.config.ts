@@ -46,8 +46,24 @@ export default defineNuxtConfig({
     ],
   ],
 
-  googleSignIn: {
-    clientId: process.env.GOOGLE_CLIENT_ID,
+  // googleSignIn: {
+  //   clientId: process.env.GOOGLE_CLIENT_ID,
+  // },
+
+  runtimeConfig: {
+    POSTGRES_USER: process.env.POSTGRES_USER,
+    POSTGRES_DB: process.env.POSTGRES_DB,
+    POSTGRES_HOST: process.env.POSTGRES_HOST,
+    POSTGRES_PORT: process.env.POSTGRES_PORT,
+    POSTGRES_PASSWORD: process.env.POSTGRES_PASSWORD,
+    GITHUB_CLIENT_ID: process.env.GITHUB_CLIENT_ID,
+    GITHUB_CLIENT_SECRET: process.env.GITHUB_CLIENT_SECRET,
+    SUPERTOKENS_CONNECTION_URI: process.env.SUPERTOKENS_CONNECTION_URI,
+    SUPERTOKENS_API_KEY: process.env.SUPERTOKENS_API_KEY,
+    public: {
+      apiDomain: process.env.NUXT_API_DOMAIN,
+      websiteDomain: process.env.NUXT_WEBSITE_DOMAIN,
+    },
   },
 
   primevue: {
