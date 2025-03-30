@@ -4,7 +4,7 @@
     <form
       class="flex flex-col align-center justify-center w-[90%] md:w-[70%] lg:w-[50%] xl:w-[30%]"
     >
-      <InputText v-model="name" type="text" placeholder="Name" :key="data?.body?.name ?? 'new'"></InputText>
+      <InputText v-model="name" type="text" placeholder="Name"></InputText>
       <Button
         class="flex-none m-auto my-5 px-5"
         type="submit"
@@ -30,11 +30,11 @@ const { data, error } = useFetch<{
 
 const name = ref("");
 watchEffect(() => {
-  name.value = data.value?.body?.name || "";
+  name.value = data.value?.name || "";
 });
 
 const description = computed(() =>
-  data.value?.status === 200 ? `Edit list` : `Create a new list`
+  data.value?.name ? `Edit list` : `Create a new list`
 );
 const creatingList = ref(false);
 
@@ -47,9 +47,9 @@ const createList = async () => {
   creatingList.value = true;
 
   try {
-    if (data.value?.status !== 200) {
+    if (!data.value?.name) {
       const results = await $fetch<{ body: { message: string; id: string } }>(
-        "/api/fin",
+        "/api/fin/+",
         {
           method: "POST",
           headers: useRequestHeaders(["cookie"]),
@@ -64,7 +64,7 @@ const createList = async () => {
         severity: "success",
         life: 5000,
       });
-      navigateTo(`/fin/${results?.body?.id}/bits`);
+      navigateTo(`/fin/${results?.id}/bits`);
     } else {
       await $fetch<{ body: { message: string; id: string } }>(
         `/api/fin/${finId.value}`,

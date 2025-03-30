@@ -1,20 +1,41 @@
-import { serverSupabaseClient } from "#supabase/server";
-import { Database } from "~/types/supabase";
+import { query } from '~/server/utils/db'
+import { withSession } from "supertokens-node/custom";
+import { getUserUUID } from "~/server/utils/user";
 
 export default defineEventHandler(async (event) => {
-  // Save the event data to the database
-  const client = await serverSupabaseClient<Database>(event);
-  const user = await client.auth.getUser();
+  try {
+    const request = await convertToRequest(event);
+    return withSession(request, async (err, session) => {
+      if (err) {
+        throw createError({ statusCode: 500, statusMessage: err.message || "Internal server error" });
+      }
 
-  const results = await client
-    .from("categories")
-    .select("id, name")
-    .eq("user_id", user?.data?.user?.id || "")
-    .order("created_at", { ascending: false });
+      const supertokensId = session?.getUserId();
+      if (!supertokensId) {
+        throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
+      }
 
-  if (results.data) {
-    return { status: 200, body: results.data };
-  } else {
-    throw new Error("Error fetching data!");
+      const userId = await getUserUUID(supertokensId);
+
+      const results = await query(
+        "SELECT id, name FROM categories WHERE user_id = $1 ORDER BY created_at DESC",
+        [userId]
+      );
+
+      return new Response(JSON.stringify({
+        status: 200,
+        body: results.rows
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+
+    });
+  } catch (error: any) {
+    console.error('Error fetching categories:', error);
+    throw createError({ 
+      statusCode: error.statusCode || 500, 
+      statusMessage: error.message || "Error fetching categories" 
+    });
   }
 });

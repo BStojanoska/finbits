@@ -1,6 +1,5 @@
 <template>
-  <div class="text-2xl mb-5">{{ fin?.body?.name ?? "" }}</div>
-
+  <div class="text-2xl mb-5">{{ fin?.name ?? "" }}</div>
   <div
     v-if="
       bitsResponse?.results && Object.keys(bitsResponse?.results).length > 0
@@ -28,7 +27,7 @@
             }}
           </div>
           <div class="hover:cursor-pointer" @click="selectedBit = bit">
-            {{ bit.categories?.name }}
+            {{ bit.category_name }}
           </div>
         </template>
       </div>

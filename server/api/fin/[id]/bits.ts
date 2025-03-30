@@ -1,43 +1,75 @@
-import { serverSupabaseClient } from "#supabase/server";
-import { QueryData } from "@supabase/supabase-js";
-import { Database } from "~/types/supabase";
 import { format } from "date-fns";
+import { query } from '~/server/utils/db';
+import { withSession } from "supertokens-node/custom";
+import { getUserUUID } from "~/server/utils/user";
 
 export default defineEventHandler(async (event) => {
-  const client = await serverSupabaseClient<Database>(event);
+  try {
+    const request = await convertToRequest(event);
+    return withSession(request, async (err, session) => {
+      if (err) {
+        throw createError({ statusCode: 500, statusMessage: err.message || "Internal server error" });
+      }
 
-  const bits = client
-    .from("bits")
-    .select("*, categories (name)")
-    .eq("fin_id", event?.context?.params?.id || "")
-    .order("created_at", { ascending: false });
+      const supertokensId = session?.getUserId();
+      if (!supertokensId) {
+        throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
+      }
 
-  type BitsWithCategory = QueryData<typeof bits>;
+      const userId = await getUserUUID(supertokensId);
 
-  const { data, error } = await bits;
+      // Verify the fin belongs to the user
+      const finCheck = await query(
+        "SELECT id FROM fins WHERE id = $1 AND user_id = $2",
+        [event?.context?.params?.id, userId]
+      );
 
-  const results: BitsWithCategory = data ?? [];
+      if (finCheck.rows.length === 0) {
+        throw createError({ statusCode: 403, statusMessage: "Unauthorized access to this fin" });
+      }
 
-  if (error) {
-    throw new Error(error.message);
+      // Get bits with category information
+      const results = await query(
+        `SELECT b.*, c.name as category_name 
+         FROM bits b 
+         LEFT JOIN categories c ON b.category_id = c.id 
+         WHERE b.fin_id = $1 
+         ORDER BY b.created_at DESC`,
+        [event?.context?.params?.id]
+      );
+
+      const formattedByDate = formatByDate(results.rows);
+
+      const totals: { [key: string]: string } = {};
+      Object.keys(formattedByDate).map((key) => {
+        const total = formattedByDate[key].reduce((acc: number, bit: any) => {
+          return acc + parseFloat(bit.amount);
+        }, 0);
+
+        totals[key] = new Intl.NumberFormat('de-DE', {
+          style: "decimal",
+          maximumFractionDigits: 2,
+          minimumFractionDigits: 2,
+        }).format(total);
+        return total;
+      });
+
+      return new Response(JSON.stringify({ 
+        status: 200, 
+        results: formattedByDate, 
+        totals: totals 
+      }), {
+        status: 200,
+        headers: { "Content-Type": "application/json" },
+      });
+    });
+  } catch (error: any) {
+    console.error('Error fetching bits:', error);
+    throw createError({ 
+      statusCode: error.statusCode || 500, 
+      statusMessage: error.message || "Error fetching bits" 
+    });
   }
-
-  const formattedByDate = formatByDate(results);
-  const totals: { [key: string]: string } = {};
-  Object.keys(formattedByDate).map((key) => {
-    const total = formattedByDate[key].reduce((acc: number, bit: any) => {
-      return acc + parseFloat(bit.amount);
-    }, 0);
-
-    totals[key] = new Intl.NumberFormat('de-DE', {
-      style: "decimal",
-      maximumFractionDigits: 2,
-      minimumFractionDigits: 2,
-    }).format(total);
-    return total;
-  });
-
-  return { status: 200, results: formattedByDate, totals: totals };
 });
 
 const formatByDate = <T>(bits: T) => {

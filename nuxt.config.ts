@@ -11,16 +11,20 @@ export default defineNuxtConfig({
       ],
     },
   },
+
   devtools: { enabled: true },
+
   routeRules: {
     '/fin/**': {
       ssr: false,
     }
   },
+
   css: [
     "@fortawesome/fontawesome-svg-core/styles.css",
     "~/assets/css/main.css",
   ],
+
   build: {
     transpile: [
       "@fortawesome/vue-fontawesome",
@@ -28,8 +32,8 @@ export default defineNuxtConfig({
       "@fortawesome/free-solid-svg-icons",
     ],
   },
+
   modules: [
-    "@nuxtjs/supabase",
     "@primevue/nuxt-module",
     [
       "@nuxtjs/google-fonts",
@@ -42,9 +46,11 @@ export default defineNuxtConfig({
     ],
     'nuxt-vue3-google-signin',
   ],
+
   googleSignIn: {
     clientId: process.env.GOOGLE_CLIENT_ID,
   },
+
   primevue: {
     options: {
       theme: {
@@ -52,22 +58,25 @@ export default defineNuxtConfig({
       },
     },
   },
+
   postcss: {
     plugins: {
       tailwindcss: {},
       autoprefixer: {},
     },
   },
-  supabase: {
-    // Options
-    url: process.env.SUPABASE_URL,
-    key: process.env.SUPABASE_KEY,
-    redirectOptions: {
-      login: "/login",
-      callback: "/confirm",
-      include: ["*"],
-      exclude: ["login, confirm"],
-      cookieRedirect: false,
+
+  compatibilityDate: "2025-02-22",
+
+  nitro: {
+    routeRules: {
+      '/api/**': { cors: true }
     },
+    // handlers: [
+    //   {
+    //     route: '/**',
+    //     handler: './server/middleware/auth.ts'
+    //   }
+    // ]
   },
 });

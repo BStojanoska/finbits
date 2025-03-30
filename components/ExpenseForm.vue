@@ -129,9 +129,9 @@ const createExpense = async (e: Event) => {
     date: date.value.toISOString(),
     amount: amount.value.toString().trim(),
     note: note.value.trim(),
-    category: category.value?.name
-      ? category.value.name.trim()
-      : category.value.trim(),
+    category: category.value?.name 
+      ? category.value.name.trim() 
+      : category.value?.trim() || '',  // Handle both object and string cases
   };
 
   let method = "POST" as "POST" | "PUT";
@@ -143,10 +143,11 @@ const createExpense = async (e: Event) => {
     const response = await $fetch(`/api/fin/${route?.params?.id}/bit`, {
       method,
       headers: useRequestHeaders(["cookie"]),
-      body: JSON.stringify(payload),
+      body: payload,  // Remove JSON.stringify, $fetch will handle it
     });
 
-    if (response.status !== 200) {
+    // Check for response.body.message instead of status
+    if (!response?.message === "success") {
       throw new Error("Error adding expense...");
     }
 
@@ -154,24 +155,22 @@ const createExpense = async (e: Event) => {
     props.refreshItems();
 
     toast.add({
-      summary: `Expense ${
-        props.selectedBit?.id ? "edited" : "added"
-      } successfully!`,
+      summary: `Expense ${props.selectedBit?.id ? "edited" : "added"} successfully!`,
       severity: "success",
       life: 5000,
     });
-  } catch (e) {
+    
+    emit("update:openDialog", false);
+  } catch (error: any) {
+    console.error('Error details:', error);
     toast.add({
-      summary:
-        `There was an error ${
-          props.selectedBit?.id ? "updating" : "adding"
-        } the expense...` + e,
+      summary: `There was an error ${props.selectedBit?.id ? "updating" : "adding"} the expense`,
+      detail: error.message || "Unknown error",
       severity: "error",
       life: 5000,
     });
   } finally {
     creating.value = false;
-    emit("update:openDialog", false);
   }
 };
 

@@ -1,8 +1,8 @@
 <template>
-  <div v-if="lists?.body && lists?.body.length > 0">
+  <div v-if="lists && lists.length > 0">
     <div class="text-xl">All your financial lists</div>
 
-    <div v-for="list in lists?.body" :key="list?.name ?? list.id">
+    <div v-for="list in lists" :key="list.id">
       <Card
         class="mt-3 hover:cursor-pointer"
         @click="router.push({ path: `/fin/${list?.id}/bits` })"
@@ -17,7 +17,10 @@
                 class="mr-4"
                 severity="secondary"
                 outlined
-                @click="$event.stopPropagation();router.push({ path: `/fin/${list?.id}` })"
+                @click="
+                  $event.stopPropagation();
+                  router.push({ path: `/fin/${list?.id}` });
+                "
               >
                 <font-awesome-icon icon="fa-solid fa-pen" />
               </Button>
@@ -44,7 +47,7 @@
     class="bottom-[20px] right-[20px]"
     rounded
     style="font-size: 1.5rem; padding: 2rem; position: fixed"
-    @click="router.push({ path: '/new' })"
+    @click="router.push({ path: '/fin/+' })"
   >
     <template #icon>
       <font-awesome-icon icon="fa-solid fa-plus" />
@@ -55,6 +58,8 @@
 <script setup lang="ts">
 import ConfirmDialog from "primevue/confirmdialog";
 import { useConfirm } from "primevue/useconfirm";
+import * as Session from "supertokens-web-js/recipe/session";
+import { initSuperTokensWebJS } from "../config/frontend";
 
 useHead({
   titleTemplate: "FinBits",
@@ -63,12 +68,32 @@ useHead({
 const router = useRouter();
 const confirm = useConfirm();
 const toast = useToast();
+const userId = ref<string | null>(null);
+
+onMounted(async () => {
+  initSuperTokensWebJS();
+
+  const session = await Session.doesSessionExist();
+  if (!session) {
+    router.push("/login");
+  }
+  await getUserInfo();
+});
+
+const getUserInfo = async () => {
+  const session = await Session.doesSessionExist();
+  if (session) {
+    userId.value = await Session.getUserId();
+  }
+};
 
 const {
   data: lists,
   error,
   refresh,
-} = useFetch("/api/fins", { method: "GET" });
+} = useFetch("/api/fins", {
+  method: "GET",
+});
 
 const confirmDelete = ($event: any, id: number | string) => {
   $event.stopPropagation();
@@ -87,12 +112,12 @@ const confirmDelete = ($event: any, id: number | string) => {
       severity: "danger",
     },
     accept: async () => {
-      const results = await $fetch(`/api/fin/${id}`, {
-        method: "DELETE",
-      });
+      try {
+        await $fetch(`/api/fin/${id}`, {
+          method: "DELETE",
+        });
 
-      console.log(results);
-      if (results?.status === 204) {
+        // Successfully deleted
         toast.add({
           severity: "success",
           summary: "Deleted",
@@ -100,7 +125,8 @@ const confirmDelete = ($event: any, id: number | string) => {
           life: 3000,
         });
         refresh();
-      } else {
+      } catch (err) {
+        console.error("Error deleting record:", err);
         toast.add({
           severity: "error",
           summary: "Error",
