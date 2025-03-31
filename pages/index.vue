@@ -72,7 +72,7 @@ const userId = ref<string | null>(null);
 onMounted(async () => {
   const session = await Session.doesSessionExist();
   if (!session) {
-    router.push("/login");
+    router.push("/auth");
   }
   await getUserInfo();
 });
