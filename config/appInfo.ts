@@ -9,5 +9,5 @@ export const appInfo = {
     apiDomain: config.public.apiDomain,
     websiteDomain: config.public.websiteDomain,
     apiBasePath: "/api/auth",
-    websiteBasePath: "/login",
+    websiteBasePath: "/auth",
 };
