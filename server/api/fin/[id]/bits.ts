@@ -96,7 +96,8 @@ const formatByDate = <T>(bits: T) => {
   if (!bits || !(bits instanceof Array)) return obj;
 
   bits.forEach((bit: any) => {
-    const formattedDate = format(bit.created_at, "dd/MM/yyyy").toString();
+    // Use the actual expense date (bit.date) for grouping
+    const formattedDate = format(new Date(bit.date), "dd/MM/yyyy").toString();
     if (!obj[formattedDate]) {
       obj[formattedDate] = [];
     }

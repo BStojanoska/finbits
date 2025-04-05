@@ -64,6 +64,7 @@
 </template>
 
 <script setup lang="ts">
+// No date-fns format needed here anymore
 import InputNumber from "primevue/inputnumber";
 import ConfirmPopup from 'primevue/confirmpopup';
 import { useConfirm } from "primevue/useconfirm";
@@ -161,18 +162,18 @@ const createExpense = async (e: Event) => {
   e.preventDefault();
   creating.value = true;
 
-  const payload = {
-    id: props.selectedBit?.id || null,
-    name: name.value.trim(),
-    date: date.value.toISOString(),
-    amount: amount.value.toString().trim(),
-    note: note.value.trim(),
-    // Send the category ID (value) if an object is selected, otherwise send the raw input (for potential new categories)
-    category_id: category.value?.value || null,
-    category_name: category.value?.name // Send name separately if needed by backend for new category creation
-      ? category.value.name.trim()
-      : typeof category.value === 'string' ? category.value.trim() : null,
-  };
+const payload = {
+  id: props.selectedBit?.id || null,
+  name: name.value.trim(),
+  date: date.value.toISOString(), // Send ISO string again
+  amount: amount.value.toString().trim(),
+  note: note.value.trim(),
+  category_id: category.value?.value || null,
+  category_name: category.value?.name
+    ? category.value.name.trim()
+    : typeof category.value === 'string' ? category.value.trim() : null,
+};
+
 
   let method = "POST" as "POST" | "PUT";
   if (props.selectedBit?.id) {

@@ -8,12 +8,19 @@
         @click="router.push({ path: `/fin/${list?.id}/bits` })"
       >
         <template #title>
-          <div class="flex flex-nowrap justify-between">
-            {{ list?.name }}
-            <div>
-              <span class="text-sm text-gray-500">
-                {{ list?.date_from }} - {{ list?.date_to }}
-              </span>
+          <div class="flex flex-nowrap justify-between items-center">
+            <div class="flex flex-col">
+              <div class="flex-grow mr-4">
+                {{ list?.name }}
+                <span v-if="list?.total_amount" class="ml-2 text-lg font-semibold">
+                  - {{ formatCurrency(list.total_amount) }}
+                </span>
+              </div>
+              <div class="text-right flex-shrink-0">
+                <span v-if="list?.date_from && list?.date_to" class="text-sm text-gray-500">
+                  {{ formatDate(list.date_from) }} - {{ formatDate(list.date_to) }}
+                </span>
+              </div>
             </div>
             <div>
               <Button
@@ -59,6 +66,7 @@
 </template>
 
 <script setup lang="ts">
+import { format } from 'date-fns'; // Import date-fns format function
 import ConfirmDialog from "primevue/confirmdialog";
 import { useConfirm } from "primevue/useconfirm";
 import * as Session from "supertokens-web-js/recipe/session";
@@ -92,6 +100,25 @@ const getUserInfo = async () => {
   const session = await Session.doesSessionExist();
   if (session) {
     userId.value = await Session.getUserId();
+  }
+};
+
+// Helper function to format currency
+const formatCurrency = (value: number | string | null | undefined) => {
+  if (value === null || value === undefined) return '';
+  const numberValue = typeof value === 'string' ? parseFloat(value) : value;
+  return new Intl.NumberFormat('en-US', { style: 'currency', currency: 'USD' }).format(numberValue);
+};
+
+// Helper function to format date
+const formatDate = (dateString: string | null | undefined) => {
+  if (!dateString) return '';
+  try {
+    // Assuming dateString is in ISO format or recognizable by Date constructor
+    return format(new Date(dateString), 'dd/MM/yyyy');
+  } catch (e) {
+    console.error("Error formatting date:", dateString, e);
+    return dateString; // Return original string if formatting fails
   }
 };
 

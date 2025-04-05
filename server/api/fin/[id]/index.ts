@@ -25,7 +25,12 @@ export default defineEventHandler(async (event) => {
 
     if (event.method === "GET") {
       const result = await db
-        .select({ name: finsTable.name })
+        .select({
+          name: finsTable.name,
+          total_amount: finsTable.total_amount, // Add total amount
+          date_from: finsTable.date_from,       // Add date from
+          date_to: finsTable.date_to            // Add date to
+        })
         .from(finsTable)
         .where(and(eq(finsTable.id, finId), eq(finsTable.user_id, userId)))
         .limit(1);

@@ -26,6 +26,9 @@ export default defineEventHandler(async (event) => {
           id: finsTable.id,
           name: finsTable.name,
           created_at: finsTable.created_at,
+          total_amount: finsTable.total_amount,
+          date_from: finsTable.date_from,
+          date_to: finsTable.date_to,
         })
         .from(finsTable)
         .where(eq(finsTable.user_id, userId))
