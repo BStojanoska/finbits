@@ -30,30 +30,49 @@
       />
       <InputText v-model="note" type="text" placeholder="Note"></InputText>
 
-      <div class="flex justify-end gap-2">
-        <Button
-          type="button"
-          label="Cancel"
-          severity="secondary"
-          @click="updateVisible(false)"
-        ></Button>
-        <Button
-          type="button"
-          label="Save"
-          :loading="creating"
-          @click="createExpense"
-        ></Button>
+      <div class="flex justify-between w-full">
+         <Button
+           v-if="props.selectedBit?.id"
+           type="button"
+           label="Delete"
+           severity="danger"
+           icon="pi pi-trash"
+           outlined
+           :loading="deleting"
+           @click="confirmDelete($event)"
+         ></Button>
+         <div v-else></div> <!-- Placeholder to keep alignment -->
+
+         <div class="flex justify-end gap-2">
+             <Button
+               type="button"
+               label="Cancel"
+               severity="secondary"
+               @click="updateVisible(false)"
+             ></Button>
+             <Button
+               type="button"
+               label="Save"
+               :loading="creating"
+               @click="createExpense"
+             ></Button>
+         </div>
       </div>
+      <ConfirmPopup></ConfirmPopup>
     </form>
   </Dialog>
 </template>
 
 <script setup lang="ts">
 import InputNumber from "primevue/inputnumber";
+import ConfirmPopup from 'primevue/confirmpopup';
+import { useConfirm } from "primevue/useconfirm";
 
 const form = ref();
 const creating = ref(false);
+const deleting = ref(false);
 const toast = useToast();
+const confirm = useConfirm();
 const filteredCategories = ref();
 const name = ref("");
 const amount = ref(0);
@@ -77,18 +96,37 @@ const props = withDefaults(
   }
 );
 
-onMounted(async () => {
-  const response = await $fetch("/api/categories", {
-    method: "GET",
-  });
-
-  if (response.status === 200) {
-    categories.value = response.body.map((cat: any) => {
-      return { name: cat.name, value: cat.id };
+const fetchCategories = async () => {
+  try {
+    const response = await $fetch<{ body: { id: string; name: string }[] }>("/api/categories", {
+      method: "GET",
     });
-    filteredCategories.value = categories.value;
+    // Assuming response structure is directly the array or has a body property
+    const categoryList = response?.body || response;
+    if (Array.isArray(categoryList)) {
+      categories.value = categoryList.map((cat: any) => ({
+        name: cat.name,
+        value: cat.id, // Ensure 'value' holds the ID
+      }));
+      filteredCategories.value = categories.value;
+    } else {
+       console.error("Unexpected category response format:", response);
+       categories.value = [];
+       filteredCategories.value = [];
+    }
+  } catch (error) {
+    console.error("Failed to fetch categories:", error);
+    toast.add({
+      summary: "Error fetching categories",
+      severity: "error",
+      life: 3000,
+    });
+     categories.value = [];
+     filteredCategories.value = [];
   }
-});
+};
+
+onMounted(fetchCategories);
 
 const search = (event: any) => {
   setTimeout(() => {
@@ -129,9 +167,11 @@ const createExpense = async (e: Event) => {
     date: date.value.toISOString(),
     amount: amount.value.toString().trim(),
     note: note.value.trim(),
-    category: category.value?.name 
-      ? category.value.name.trim() 
-      : category.value?.trim() || '',  // Handle both object and string cases
+    // Send the category ID (value) if an object is selected, otherwise send the raw input (for potential new categories)
+    category_id: category.value?.value || null,
+    category_name: category.value?.name // Send name separately if needed by backend for new category creation
+      ? category.value.name.trim()
+      : typeof category.value === 'string' ? category.value.trim() : null,
   };
 
   let method = "POST" as "POST" | "PUT";
@@ -147,12 +187,14 @@ const createExpense = async (e: Event) => {
     });
 
     // Check for response.body.message instead of status
-    if (!response?.message === "success") {
+    // Check if the message is NOT success
+    if (response?.message !== "success") {
       throw new Error("Error adding expense...");
     }
 
-    resetForm();
-    props.refreshItems();
+    props.refreshItems(); // Refresh parent list first
+    await fetchCategories(); // Refresh local categories *before* reset
+    resetForm(); // Now reset the form
 
     toast.add({
       summary: `Expense ${props.selectedBit?.id ? "edited" : "added"} successfully!`,
@@ -170,7 +212,7 @@ const createExpense = async (e: Event) => {
       life: 5000,
     });
   } finally {
-    creating.value = false;
+    creating.value = false; // Also reset creating if delete fails? Maybe not needed.
   }
 };
 
@@ -182,15 +224,74 @@ watch(
     }
   }
 );
-
 const editBit = (item: any) => {
-  const cat = categories.value.find((c: any) => c.id === item.category);
+  // Find category object using category_id from the item
+  const cat = categories.value.find((c: any) => c.value === item.category_id);
 
   name.value = item.name;
   amount.value = parseFloat(item.amount);
-  date.value = props.selectedBit?.id ? new Date(item.created_at) : new Date();
+  // Use item.date for the actual expense date
+  date.value = props.selectedBit?.id ? new Date(item.date) : new Date();
   note.value = item.note;
-  category.value = cat.name;
+  // Set category.value to the full category object for AutoComplete
+  category.value = cat;
   emit("update:openDialog", true);
-};
+}; // End of editBit
+
+const confirmDelete = (event: any) => {
+  confirm.require({
+    target: event.currentTarget,
+    message: 'Do you want to delete this expense?',
+    icon: 'pi pi-info-circle',
+    rejectClass: 'p-button-secondary p-button-outlined p-button-sm',
+    acceptClass: 'p-button-danger p-button-sm',
+    rejectLabel: 'Cancel',
+    acceptLabel: 'Delete',
+    accept: () => {
+      deleteExpense();
+    },
+    reject: () => {
+      // Optional: Handle rejection
+    }
+  });
+}; // End of confirmDelete
+
+const deleteExpense = async () => {
+  if (!props.selectedBit?.id) return;
+
+  deleting.value = true;
+  try {
+    const response = await $fetch(`/api/fin/${route?.params?.id}/bit`, {
+      method: 'DELETE',
+      headers: useRequestHeaders(['cookie']),
+      body: { id: props.selectedBit.id }, // Send ID in body
+    });
+
+    if (response?.message !== 'success') {
+      throw new Error(response?.message || 'Failed to delete expense');
+    }
+
+    toast.add({
+      summary: 'Expense Deleted',
+      detail: 'The expense has been successfully deleted.',
+      severity: 'success',
+      life: 3000,
+    });
+
+    props.refreshItems(); // Refresh the list in the parent component
+    emit('update:openDialog', false); // Close the dialog
+    resetForm(); // Reset form state
+
+  } catch (error: any) {
+    console.error('Error deleting expense:', error);
+    toast.add({
+      summary: 'Deletion Error',
+      detail: error.message || 'An error occurred while deleting the expense.',
+      severity: 'error',
+      life: 5000,
+    });
+  } finally {
+    deleting.value = false;
+  }
+}; // End of deleteExpense
 </script>

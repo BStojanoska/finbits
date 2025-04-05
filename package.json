@@ -15,21 +15,27 @@
     "@nuxt/ui": "^2.17.0",
     "@nuxtjs/google-fonts": "^3.2.0",
     "@primevue/themes": "^4.0.1",
-    "@types/pg": "^8.11.11",
+    "@types/uuid": "^10.0.0",
     "date-fns": "^3.6.0",
+    "dotenv": "^16.4.7",
+    "drizzle-orm": "^0.41.0",
+    "jwks-rsa": "^3.1.0",
     "nuxt": "^3.12.2",
-    "pg": "^8.13.3",
+    "pg": "^8.14.1",
     "primevue": "^4.0.1",
-    "vue": "latest",
     "supertokens-node": "latest",
     "supertokens-web-js": "latest",
-    "jwks-rsa": "^3.1.0"
+    "uuid": "^11.1.0",
+    "vue": "latest"
   },
   "devDependencies": {
     "@primevue/nuxt-module": "^4.0.1",
+    "@types/pg": "^8.11.11",
     "autoprefixer": "^10.4.19",
+    "drizzle-kit": "^0.30.6",
     "postcss": "^8.4.39",
     "sass": "^1.77.6",
-    "tailwindcss": "^3.4.6"
+    "tailwindcss": "^3.4.6",
+    "tsx": "^4.19.3"
   }
 }

@@ -64,7 +64,7 @@ const createList = async () => {
         severity: "success",
         life: 5000,
       });
-      navigateTo(`/fin/${results?.id}/bits`);
+      navigateTo(`/`); // Navigate to the root page (list of fins)
     } else {
       await $fetch<{ body: { message: string; id: string } }>(
         `/api/fin/${finId.value}`,

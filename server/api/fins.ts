@@ -1,4 +1,7 @@
 import { withSession } from "supertokens-node/custom";
+import { db } from '~/server/db';
+import { eq, desc } from 'drizzle-orm';
+import { finsTable } from '~/server/db/schema';
 import { getUserUUID } from "~/server/utils/user";
 
 export default defineEventHandler(async (event) => {
@@ -18,12 +21,17 @@ export default defineEventHandler(async (event) => {
 
       const userId = await getUserUUID(supertokensId);
 
-      const results = await query(
-        'SELECT id, name, created_at FROM fins WHERE user_id = $1 ORDER BY created_at DESC',
-        [userId]
-      );
+      const results = await db
+        .select({
+          id: finsTable.id,
+          name: finsTable.name,
+          created_at: finsTable.created_at,
+        })
+        .from(finsTable)
+        .where(eq(finsTable.user_id, userId))
+        .orderBy(desc(finsTable.created_at));
 
-      return new Response(JSON.stringify(results.rows), {
+      return new Response(JSON.stringify(results), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });

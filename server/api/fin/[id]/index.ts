@@ -1,4 +1,7 @@
-import { query } from '~/server/utils/db';
+import { db } from '~/server/db';
+import { eq, and } from 'drizzle-orm';
+import { finsTable } from '~/server/db/schema';
+import { v4 as uuidv4 } from 'uuid'; // Import UUID generator
 import { withSession } from 'supertokens-node/custom';
 import { getUserUUID } from '~/server/utils/user';
 
@@ -15,59 +18,90 @@ export default defineEventHandler(async (event) => {
     }
     const userId = await getUserUUID(supertokensId);
 
-    if (event.method === "GET") {
-      const results = await query(
-        "SELECT name FROM fins WHERE id = $1 AND user_id = $2 LIMIT 1",
-        [event?.context?.params?.id || "", userId]
-      );
+    const finId = event?.context?.params?.id;
+    if (!finId) {
+      throw createError({ statusCode: 400, statusMessage: "Fin ID is required" });
+    }
 
-      return new Response(JSON.stringify(results.rows[0]), {
+    if (event.method === "GET") {
+      const result = await db
+        .select({ name: finsTable.name })
+        .from(finsTable)
+        .where(and(eq(finsTable.id, finId), eq(finsTable.user_id, userId)))
+        .limit(1);
+
+      if (result.length === 0) {
+        throw createError({ statusCode: 404, statusMessage: "Fin not found" });
+      }
+
+      return new Response(JSON.stringify(result[0]), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
     } else if (event.method === "POST") {
       const body = await readBody(event);
 
-      const results = await query(
-        "INSERT INTO fins (user_id, name) VALUES ($1, $2) RETURNING id",
-        [userId, body.name]
-      );
+      // Note: This POST ignores the finId from the route and creates a new fin.
+      // Generate a new ID for the fin
+      const newFinId = uuidv4();
 
-      return new Response(JSON.stringify({ message: "success", id: results.rows[0].id }), {
-        status: 200,
+      // Ensure required 'name' field is present in the body
+      if (!body.name) {
+        throw createError({ statusCode: 400, statusMessage: "Missing required field (name) in request body" });
+      }
+
+      const insertResult = await db
+        .insert(finsTable)
+        .values({
+          id: newFinId, // Provide the generated ID
+          user_id: userId,
+          name: body.name,
+          date_from: new Date(), // Default to current timestamp
+          date_to: new Date(),     // Default to current timestamp
+          total_amount: '0.00', // Default to 0.00
+        })
+        .returning({ id: finsTable.id });
+
+      if (insertResult.length === 0) {
+         throw createError({ statusCode: 500, statusMessage: "Failed to create fin" });
+      }
+
+      return new Response(JSON.stringify({ message: "success", id: insertResult[0].id }), {
+        status: 201, // Use 201 Created for successful resource creation
         headers: { "Content-Type": "application/json" },
       });
     } else if (event.method === "DELETE") {
-      // Verify the fin belongs to the user
-      const finCheck = await query(
-        "SELECT id FROM fins WHERE id = $1 AND user_id = $2",
-        [event?.context?.params?.id, userId]
-      );
+      // Verification is implicitly handled by the WHERE clause in the delete operation.
+      // If the delete operation affects 0 rows, it means the fin didn't exist or didn't belong to the user.
 
-      if (finCheck.rows.length === 0) {
-        throw createError({ statusCode: 403, statusMessage: "Unauthorized access to this fin" });
-      }
+      const deleteResult = await db
+        .delete(finsTable)
+        .where(and(eq(finsTable.id, finId), eq(finsTable.user_id, userId)))
+        .returning({ id: finsTable.id }); // Returning ID to check if deletion happened
 
-      await query(
-        "DELETE FROM fins WHERE id = $1 AND user_id = $2",
-        [event?.context?.params?.id, userId]
-      );
+      // Check if any row was actually deleted
+       if (deleteResult.length === 0) {
+         throw createError({ statusCode: 404, statusMessage: "Fin not found or unauthorized" });
+       }
 
       // Return 200 with success message
-      return new Response(JSON.stringify({ 
-        status: 200,
-        body: { message: "success" }
-      }), {
+      return new Response(JSON.stringify({ message: "success" }), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });
     } else if (event.method === "PUT") {
       const body = await readBody(event);
 
-      await query(
-        "UPDATE fins SET name = $1 WHERE id = $2 AND user_id = $3",
-        [body.name, event?.context?.params?.id || "", userId]
-      );
+      const updateResult = await db
+        .update(finsTable)
+        .set({ name: body.name })
+        .where(and(eq(finsTable.id, finId), eq(finsTable.user_id, userId)))
+        .returning({ id: finsTable.id }); // Returning ID to check if update happened
+
+      // Check if any row was actually updated
+      if (updateResult.length === 0) {
+        throw createError({ statusCode: 404, statusMessage: "Fin not found or unauthorized" });
+      }
 
       return new Response(JSON.stringify({ message: "success" }), {
         status: 200,

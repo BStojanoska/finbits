@@ -1,11 +1,11 @@
 import SuperTokens from "supertokens-web-js";
 import Session from "supertokens-web-js/recipe/session";
-import { appInfo } from "./appInfo";
+import { useAppInfo } from "./appInfo";
 
 export function initSuperTokensUI() {
     // Only run in browser environment
     if (typeof window === 'undefined') return;
-    
+    const appInfo = useAppInfo();
     (window as any).supertokensUIInit("supertokensui", {
         appInfo,
         recipeList: [
@@ -26,7 +26,7 @@ export function initSuperTokensUI() {
 export function initSuperTokensWebJS() {
     // Only run in browser environment
     if (typeof window === 'undefined') return;
-    
+    const appInfo = useAppInfo();
     SuperTokens.init({
         appInfo,
         recipeList: [Session.init()],

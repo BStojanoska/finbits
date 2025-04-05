@@ -1,4 +1,6 @@
-import { query } from '~/server/utils/db'
+import { db } from '~/server/db';
+import { eq, desc } from 'drizzle-orm';
+import { categoriesTable } from '~/server/db/schema';
 import { withSession } from "supertokens-node/custom";
 import { getUserUUID } from "~/server/utils/user";
 
@@ -17,14 +19,18 @@ export default defineEventHandler(async (event) => {
 
       const userId = await getUserUUID(supertokensId);
 
-      const results = await query(
-        "SELECT id, name FROM categories WHERE user_id = $1 ORDER BY created_at DESC",
-        [userId]
-      );
+      const results = await db
+        .select({
+          id: categoriesTable.id,
+          name: categoriesTable.name,
+        })
+        .from(categoriesTable)
+        .where(eq(categoriesTable.user_id, userId))
+        .orderBy(desc(categoriesTable.created_at));
 
       return new Response(JSON.stringify({
         status: 200,
-        body: results.rows
+        body: results
       }), {
         status: 200,
         headers: { "Content-Type": "application/json" },

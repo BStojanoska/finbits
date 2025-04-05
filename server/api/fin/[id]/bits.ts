@@ -1,5 +1,7 @@
 import { format } from "date-fns";
-import { query } from '~/server/utils/db';
+import { db } from '~/server/db';
+import { eq, desc, and } from 'drizzle-orm';
+import { bitsTable, categoriesTable, finsTable } from '~/server/db/schema';
 import { withSession } from "supertokens-node/custom";
 import { getUserUUID } from "~/server/utils/user";
 
@@ -18,27 +20,43 @@ export default defineEventHandler(async (event) => {
 
       const userId = await getUserUUID(supertokensId);
 
-      // Verify the fin belongs to the user
-      const finCheck = await query(
-        "SELECT id FROM fins WHERE id = $1 AND user_id = $2",
-        [event?.context?.params?.id, userId]
-      );
+      const finId = event?.context?.params?.id;
+      if (!finId) {
+        throw createError({ statusCode: 400, statusMessage: "Fin ID is required" });
+      }
 
-      if (finCheck.rows.length === 0) {
+      // Verify the fin belongs to the user
+      const finCheck = await db
+        .select({ id: finsTable.id })
+        .from(finsTable)
+        .where(and(eq(finsTable.id, finId), eq(finsTable.user_id, userId)))
+        .limit(1);
+
+      if (finCheck.length === 0) {
         throw createError({ statusCode: 403, statusMessage: "Unauthorized access to this fin" });
       }
 
       // Get bits with category information
-      const results = await query(
-        `SELECT b.*, c.name as category_name 
-         FROM bits b 
-         LEFT JOIN categories c ON b.category_id = c.id 
-         WHERE b.fin_id = $1 
-         ORDER BY b.created_at DESC`,
-        [event?.context?.params?.id]
-      );
+      const results = await db
+        .select({
+          // Explicitly list columns from bitsTable
+          id: bitsTable.id,
+          name: bitsTable.name,
+          amount: bitsTable.amount,
+          date: bitsTable.date,
+          note: bitsTable.note,
+          created_at: bitsTable.created_at,
+          category_id: bitsTable.category_id,
+          fin_id: bitsTable.fin_id,
+          // Add the aliased category name
+          category_name: categoriesTable.name,
+        })
+        .from(bitsTable)
+        .leftJoin(categoriesTable, eq(bitsTable.category_id, categoriesTable.id))
+        .where(eq(bitsTable.fin_id, finId))
+        .orderBy(desc(bitsTable.created_at));
 
-      const formattedByDate = formatByDate(results.rows);
+      const formattedByDate = formatByDate(results); // Use Drizzle results directly
 
       const totals: { [key: string]: string } = {};
       Object.keys(formattedByDate).map((key) => {

@@ -1,11 +1,12 @@
 import { H3Event, readBody } from "h3";
-import { appInfo } from "~/config/appInfo";
+import { useAppInfo } from "~/config/appInfo";
 
 interface ExtendedRequestInit extends RequestInit {
     duplex?: string;
 }
 
 export async function convertToRequest(event: H3Event): Promise<Request> {
+    const appInfo = useAppInfo();
     const url = new URL(`${appInfo.apiDomain}${event._path}`);
     const headers = new Headers(event.node.req.headers as Record<string, string>);
     const method = (event.method || "GET").toUpperCase();

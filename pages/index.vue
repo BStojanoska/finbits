@@ -10,8 +10,11 @@
         <template #title>
           <div class="flex flex-nowrap justify-between">
             {{ list?.name }}
-            <!-- TODO add date range depending on the bits dates -->
-
+            <div>
+              <span class="text-sm text-gray-500">
+                {{ list?.date_from }} - {{ list?.date_to }}
+              </span>
+            </div>
             <div>
               <Button
                 class="mr-4"
@@ -60,6 +63,14 @@ import ConfirmDialog from "primevue/confirmdialog";
 import { useConfirm } from "primevue/useconfirm";
 import * as Session from "supertokens-web-js/recipe/session";
 
+interface List {
+  id: string;
+  name: string;
+  date_from: string;
+  date_to: string;
+  total_amount: number;
+}
+
 useHead({
   titleTemplate: "FinBits",
   meta: [{ name: "FinBits", content: "Financial lists" }],
@@ -88,7 +99,7 @@ const {
   data: lists,
   error,
   refresh,
-} = useFetch("/api/fins", {
+} = useFetch<List[]>("/api/fins", {
   method: "GET",
 });
 
