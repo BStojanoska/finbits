@@ -15,6 +15,13 @@
       "when": 1743901116000,
       "tag": "0001_add_date_to_bits",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1743926371934,
+      "tag": "0002_zippy_sprite",
+      "breakpoints": true
     }
   ]
 }

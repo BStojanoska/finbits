@@ -1,4 +1,4 @@
-import { pgTable, varchar, timestamp, decimal, text } from "drizzle-orm/pg-core";
+import { pgTable, varchar, timestamp, decimal, text, primaryKey } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
   id: varchar({ length: 255 }).primaryKey(),
@@ -33,4 +33,15 @@ export const bitsTable = pgTable("bits", {
   created_at: timestamp().notNull().defaultNow(),
   category_id: varchar({ length: 255 }).references(() => categoriesTable.id),
   fin_id: varchar({ length: 255 }).references(() => finsTable.id),
+});
+
+export const finSharesTable = pgTable("fin_shares", {
+  fin_id: varchar({ length: 255 }).notNull().references(() => finsTable.id, { onDelete: 'cascade' }),
+  shared_with_user_email: varchar({ length: 255 }).notNull(),
+  shared_at: timestamp().notNull().defaultNow(),
+}, (table) => {
+  return {
+    // Composite primary key to ensure uniqueness
+    pk: primaryKey({ columns: [table.fin_id, table.shared_with_user_email] }),
+  };
 });

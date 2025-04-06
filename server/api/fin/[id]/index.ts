@@ -27,9 +27,11 @@ export default defineEventHandler(async (event) => {
       const result = await db
         .select({
           name: finsTable.name,
-          total_amount: finsTable.total_amount, // Add total amount
-          date_from: finsTable.date_from,       // Add date from
-          date_to: finsTable.date_to            // Add date to
+          total_amount: finsTable.total_amount,
+          date_from: finsTable.date_from,
+          date_to: finsTable.date_to,
+          // We don't strictly need to select user_id, but it confirms ownership check
+          // user_id: finsTable.user_id
         })
         .from(finsTable)
         .where(and(eq(finsTable.id, finId), eq(finsTable.user_id, userId)))
@@ -39,7 +41,10 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 404, statusMessage: "Fin not found" });
       }
 
-      return new Response(JSON.stringify(result[0]), {
+      // Since the query succeeded with the user_id check, the user is the owner
+      const responseData = { ...result[0], isOwner: true };
+
+      return new Response(JSON.stringify(responseData), {
         status: 200,
         headers: { "Content-Type": "application/json" },
       });

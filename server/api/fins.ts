@@ -1,8 +1,9 @@
 import { withSession } from "supertokens-node/custom";
-import { db } from '~/server/db';
-import { eq, desc } from 'drizzle-orm';
-import { finsTable } from '~/server/db/schema';
 import { getUserUUID } from "~/server/utils/user";
+import { db } from "~/server/db";
+import { eq, or, sql } from "drizzle-orm";
+import { finsTable, finSharesTable } from "~/server/db/schema";
+import supertokens from 'supertokens-node';
 
 export default defineEventHandler(async (event) => {
   try {
@@ -20,19 +21,40 @@ export default defineEventHandler(async (event) => {
       }
 
       const userId = await getUserUUID(supertokensId);
+      // Fetch user email as well
+      const userInfo = await supertokens.getUser(supertokensId);
+      if (!userInfo || !userInfo.emails || userInfo.emails.length === 0) {
+          throw createError({ statusCode: 500, statusMessage: "Could not retrieve user email" });
+      }
+      const userEmail = userInfo.emails[0].toLowerCase();
 
+      // Query for fins owned by the user OR shared with the user's email
       const results = await db
         .select({
           id: finsTable.id,
           name: finsTable.name,
-          created_at: finsTable.created_at,
           total_amount: finsTable.total_amount,
           date_from: finsTable.date_from,
           date_to: finsTable.date_to,
+          user_id: finsTable.user_id,
+          is_owner: sql<boolean>`${finsTable.user_id} = ${userId}`.as('is_owner')
         })
         .from(finsTable)
-        .where(eq(finsTable.user_id, userId))
-        .orderBy(desc(finsTable.created_at));
+        .leftJoin(finSharesTable, eq(finsTable.id, finSharesTable.fin_id))
+        .where(
+          or(
+            eq(finsTable.user_id, userId),
+            eq(finSharesTable.shared_with_user_email, userEmail)
+          )
+        )
+        .groupBy(
+            finsTable.id,
+            finsTable.name,
+            finsTable.total_amount,
+            finsTable.date_from,
+            finsTable.date_to,
+            finsTable.user_id
+         );
 
       return new Response(JSON.stringify(results), {
         status: 200,
