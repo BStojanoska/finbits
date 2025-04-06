@@ -1,4 +1,4 @@
-import { pgTable, varchar, timestamp, decimal, text, primaryKey } from "drizzle-orm/pg-core";
+import { pgTable, varchar, timestamp, decimal, text, primaryKey, uuid } from "drizzle-orm/pg-core";
 
 export const usersTable = pgTable("users", {
   id: varchar({ length: 255 }).primaryKey(),
@@ -8,7 +8,7 @@ export const usersTable = pgTable("users", {
 });
 
 export const finsTable = pgTable("fins", {
-  id: varchar({ length: 255 }).primaryKey(),
+  id: uuid('id').primaryKey().defaultRandom(), // Changed to uuid, assuming auto-generation needed
   name: varchar({ length: 255 }).notNull(),
   date_from: timestamp().notNull(),
   date_to: timestamp().notNull(),
@@ -32,11 +32,11 @@ export const bitsTable = pgTable("bits", {
   note: text(),
   created_at: timestamp().notNull().defaultNow(),
   category_id: varchar({ length: 255 }).references(() => categoriesTable.id),
-  fin_id: varchar({ length: 255 }).references(() => finsTable.id),
+  fin_id: uuid('fin_id').references(() => finsTable.id),
 });
 
 export const finSharesTable = pgTable("fin_shares", {
-  fin_id: varchar({ length: 255 }).notNull().references(() => finsTable.id, { onDelete: 'cascade' }),
+  fin_id: uuid('fin_id').notNull().references(() => finsTable.id, { onDelete: 'cascade' }),
   shared_with_user_email: varchar({ length: 255 }).notNull(),
   shared_at: timestamp().notNull().defaultNow(),
 }, (table) => {
