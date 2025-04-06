@@ -9,7 +9,8 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push --force"
+    "db:push": "drizzle-kit push --force",
+    "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
