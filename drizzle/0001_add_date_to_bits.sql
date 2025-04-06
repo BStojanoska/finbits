@@ -1,0 +1,1 @@
+ALTER TABLE "bits" ADD COLUMN "date" timestamp;
