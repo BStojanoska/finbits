@@ -1,9 +1,9 @@
 import { format } from "date-fns";
 import { db } from '~/server/db';
 import { eq, desc, and } from 'drizzle-orm';
-import { bitsTable, categoriesTable, finsTable } from '~/server/db/schema';
+import { bitsTable, categoriesTable, finsTable, finSharesTable } from '~/server/db/schema'; // Added finSharesTable
 import { withSession } from "supertokens-node/custom";
-import { getUserUUID } from "~/server/utils/user";
+import { getUserDetails } from "~/server/utils/user"; // Changed to getUserDetails
 
 export default defineEventHandler(async (event) => {
   try {
@@ -18,23 +18,44 @@ export default defineEventHandler(async (event) => {
         throw createError({ statusCode: 401, statusMessage: "Unauthorized" });
       }
 
-      const userId = await getUserUUID(supertokensId);
+      const userDetails = await getUserDetails(supertokensId); // Get user ID and email
+      const userId = userDetails.id;
+      const userEmail = userDetails.email;
 
       const finId = event?.context?.params?.id;
       if (!finId) {
         throw createError({ statusCode: 400, statusMessage: "Fin ID is required" });
       }
 
-      // Verify the fin belongs to the user
-      const finCheck = await db
+      // --- Authorization Check ---
+      // 1. Check if the user is the owner
+      const ownerCheck = await db
         .select({ id: finsTable.id })
         .from(finsTable)
         .where(and(eq(finsTable.id, finId), eq(finsTable.user_id, userId)))
         .limit(1);
 
-      if (finCheck.length === 0) {
+      let isAuthorized = ownerCheck.length > 0;
+
+      // 2. If not the owner, check if the fin is shared with the user
+      if (!isAuthorized) {
+        const shareCheck = await db
+          .select({ fin_id: finSharesTable.fin_id })
+          .from(finSharesTable)
+          .where(and(
+            eq(finSharesTable.fin_id, finId),
+            eq(finSharesTable.shared_with_user_email, userEmail)
+          ))
+          .limit(1);
+        
+        isAuthorized = shareCheck.length > 0;
+      }
+
+      // 3. If neither check passed, deny access
+      if (!isAuthorized) {
         throw createError({ statusCode: 403, statusMessage: "Unauthorized access to this fin" });
       }
+      // --- End Authorization Check ---
 
       // Get bits with category information
       const results = await db
