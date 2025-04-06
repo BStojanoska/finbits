@@ -9,7 +9,7 @@
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push"
+    "db:push": "drizzle-kit push --accept-destructive-changes"
   },
   "dependencies": {
     "@fortawesome/free-solid-svg-icons": "^6.6.0",
