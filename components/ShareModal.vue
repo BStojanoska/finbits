@@ -46,12 +46,11 @@ const emit = defineEmits(["update:openDialog"]);
 const props = withDefaults(
   defineProps<{
     openDialog: boolean;
-    finId: string | null; // Add finId prop
+    finId: string | string[];
   }>(),
   {
     openDialog: false,
-    finId: null, // Default finId to null
-    // finId: null,
+    finId: "",
   }
 );
 

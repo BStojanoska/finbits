@@ -22,8 +22,7 @@ const toast = useToast();
 const finId = ref(useRoute().params.id);
 
 const { data, error } = useFetch<{
-  status: number;
-  body: { name: string };
+  name: string;
 }>(`/api/fin/${finId.value}`, {
   method: "GET",
 });

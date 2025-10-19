@@ -70,6 +70,17 @@
     <span class="text-gray-400 italic">No expenses yet.</span>
   </div>
 
+  <Button
+    class="bottom-[20px] right-[20px]"
+    rounded
+    style="font-size: 1.5rem; padding: 2rem; position: fixed"
+    @click="visible = true"
+  >
+    <template #icon>
+      <font-awesome-icon icon="fa-solid fa-plus" />
+    </template>
+  </Button>
+
   <ExpenseForm
     :openDialog="visible"
     :refreshItems="refreshAllData"
@@ -82,10 +93,11 @@
 <script setup lang="ts">
 import { format } from "date-fns";
 import ShareModal from '~/components/ShareModal.vue';
+
 const route = useRoute();
 const finId = ref(route?.params?.id || "");
 const visible = ref(false);
-const selectedBit = ref(null);
+const selectedBit = ref<Bit | null>(null);
 const shareModal = ref(false);
 
 interface FinDetails {
@@ -94,6 +106,18 @@ interface FinDetails {
   date_from: string | null;
   date_to: string | null;
   isOwner?: boolean;
+}
+
+interface Bit {
+  id: string | number;
+  name: string;
+  amount: number;
+  category_name: string;
+}
+
+interface BitsResponse {
+  results: Record<string, Bit[]>;
+  totals: Record<string, number>;
 }
 
 // Fetch fin details and get its refresh function
@@ -105,17 +129,16 @@ const { data: fin, refresh: refreshFin } = useFetch<FinDetails>(
   }
 );
 
-const { data: bitsResponse, refresh } = await useAsyncData(
+const { data: bitsResponse, refresh } = await useAsyncData<BitsResponse>(
   "bits",
   async () => {
-    // This fetches the bits list
-    const response = await $fetch(`/api/fin/${route?.params?.id}/bits`, {
+    const response = await $fetch<BitsResponse>(`/api/fin/${route?.params?.id}/bits`, {
       method: "GET",
     });
     return response;
   },
   {
-    watch: [finId], // Watch finId for changes
+    watch: [finId],
   }
 );
 
