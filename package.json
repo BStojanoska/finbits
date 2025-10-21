@@ -10,7 +10,7 @@
     "postinstall": "nuxt prepare",
     "db:start": "docker-compose up -d",
     "db:migrate": "drizzle-kit migrate",
-    "db:push": "drizzle-kit push --force",
+    "db:push": "drizzle-kit push",
     "db:generate": "drizzle-kit generate"
   },
   "dependencies": {
@@ -40,6 +40,6 @@
     "postcss": "^8.4.39",
     "sass": "^1.77.6",
     "tailwindcss": "^3.4.6",
-    "tsx": "^4.19.3"
+    "tsx": "^4.20.6"
   }
 }
