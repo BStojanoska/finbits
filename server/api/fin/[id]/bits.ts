@@ -1,4 +1,4 @@
-import { format } from "date-fns";
+import { format, parseISO } from "date-fns";
 import { db } from '~/server/db';
 import { eq, desc, and, sum } from 'drizzle-orm';
 import { bitsTable, categoriesTable, finsTable, finSharesTable } from '~/server/db/schema';
@@ -150,8 +150,10 @@ const formatByDate = <T>(bits: T) => {
   if (!bits || !(bits instanceof Array)) return obj;
 
   bits.forEach((bit: any) => {
-    // Use the actual expense date (bit.date) for grouping
-    const formattedDate = format(new Date(bit.date), "dd/MM/yyyy").toString();
+    // Parse the date and format in UTC
+    const date = typeof bit.date === 'string' ? parseISO(bit.date) : new Date(bit.date);
+    const formattedDate = format(date, "dd/MM/yyyy");
+    
     if (!obj[formattedDate]) {
       obj[formattedDate] = [];
     }

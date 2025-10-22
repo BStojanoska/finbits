@@ -69,18 +69,41 @@ import InputNumber from "primevue/inputnumber";
 import ConfirmPopup from 'primevue/confirmpopup';
 import { useConfirm } from "primevue/useconfirm";
 
+// Add proper type definitions
+interface Category {
+  name: string;
+  value: string;
+}
+
+interface BitItem {
+  id?: string;
+  name: string;
+  amount: string;
+  date: string;
+  note: string;
+  category_id?: string;
+  category_name?: string;
+}
+
+interface ApiResponse {
+  message: string;
+  id?: string;
+}
+
+// Fix ref types
+const filteredCategories = ref<Category[]>([]);
+const categories = ref<Category[]>([]);
+const category = ref<Category | string | null>(null);
+
 const form = ref();
 const creating = ref(false);
 const deleting = ref(false);
 const toast = useToast();
 const confirm = useConfirm();
-const filteredCategories = ref();
 const name = ref("");
 const amount = ref(0);
 const date = ref(new Date());
 const note = ref("");
-const category = ref();
-const categories = ref();
 const route = useRoute();
 const emit = defineEmits(["update:openDialog", "update:selectedBit"]);
 
@@ -88,7 +111,7 @@ const props = withDefaults(
   defineProps<{
     openDialog: boolean;
     refreshItems: () => void;
-    selectedBit: any;
+    selectedBit: BitItem | null;
   }>(),
   {
     openDialog: false,
@@ -99,21 +122,21 @@ const props = withDefaults(
 
 const fetchCategories = async () => {
   try {
-    const response = await $fetch<{ body: { id: string; name: string }[] }>("/api/categories", {
+    const response = await $fetch<{ body: Category[] } | Category[]>("/api/categories", {
       method: "GET",
     });
-    // Assuming response structure is directly the array or has a body property
-    const categoryList = response?.body || response;
+    
+    const categoryList = (response as any)?.body || response;
     if (Array.isArray(categoryList)) {
       categories.value = categoryList.map((cat: any) => ({
         name: cat.name,
-        value: cat.id, // Ensure 'value' holds the ID
+        value: cat.id,
       }));
       filteredCategories.value = categories.value;
     } else {
-       console.error("Unexpected category response format:", response);
-       categories.value = [];
-       filteredCategories.value = [];
+      console.error("Unexpected category response format:", response);
+      categories.value = [];
+      filteredCategories.value = [];
     }
   } catch (error) {
     console.error("Failed to fetch categories:", error);
@@ -122,19 +145,20 @@ const fetchCategories = async () => {
       severity: "error",
       life: 3000,
     });
-     categories.value = [];
-     filteredCategories.value = [];
+    categories.value = [];
+    filteredCategories.value = [];
   }
 };
 
 onMounted(fetchCategories);
 
-const search = (event: any) => {
+// Fix search function
+const search = (event: { query: string }) => {
   setTimeout(() => {
     if (!event.query.trim().length) {
       filteredCategories.value = [...categories.value];
     } else {
-      filteredCategories.value = categories.value.filter((cat: any) => {
+      filteredCategories.value = categories.value.filter((cat: Category) => {
         return cat.name.toLowerCase().startsWith(event.query.toLowerCase());
       });
     }
@@ -162,39 +186,37 @@ const createExpense = async (e: Event) => {
   e.preventDefault();
   creating.value = true;
 
-const payload = {
-  id: props.selectedBit?.id || null,
-  name: name.value.trim(),
-  date: date.value.toISOString(), // Send ISO string again
-  amount: amount.value.toString().trim(),
-  note: note.value.trim(),
-  category_id: category.value?.value || null,
-  category_name: category.value?.name
-    ? category.value.name.trim()
-    : typeof category.value === 'string' ? category.value.trim() : null,
-};
+  const payload = {
+    id: props.selectedBit?.id || null,
+    name: name.value.trim(),
+    date: date.value.toDateString(),
+    amount: amount.value.toString().trim(),
+    note: note.value.trim(),
+    category_id: (category.value as Category)?.value || null,
+    category_name: (category.value as Category)?.name
+      ? (category.value as Category).name.trim()
+      : typeof category.value === 'string' ? category.value.trim() : null,
+  };
 
-
-  let method = "POST" as "POST" | "PUT";
+  let method: "POST" | "PUT" = "POST";
   if (props.selectedBit?.id) {
     method = "PUT";
   }
 
   try {
-    const response = await $fetch(`/api/fin/${route?.params?.id}/bit`, {
+    const response = await $fetch<ApiResponse>(`/api/fin/${route?.params?.id}/bit`, {
       method,
       headers: useRequestHeaders(["cookie"]),
-      body: payload,  // Remove JSON.stringify, $fetch will handle it
+      body: payload,
     });
 
-    // Check if the message is NOT success
-    if (!response?.ok) {
+    if (!response?.message || response.message !== "success") {
       throw new Error("Error adding expense...");
     }
 
-    props.refreshItems(); // Refresh parent list first
-    await fetchCategories(); // Refresh local categories *before* reset
-    resetForm(); // Now reset the form
+    props.refreshItems();
+    await fetchCategories();
+    resetForm();
 
     toast.add({
       summary: `Expense ${props.selectedBit?.id ? "edited" : "added"} successfully!`,
@@ -224,28 +246,26 @@ watch(
     }
   }
 );
-const editBit = async (item: any) => {
-  // Ensure categories are loaded before trying to find the category
+
+// Fix editBit function
+const editBit = async (item: BitItem) => {
   if (!categories.value || categories.value.length === 0) {
     await fetchCategories();
   }
   
-  // Find category object using category_id from the item
-  const cat = categories.value?.find((c: any) => c.value === item.category_id);
+  const cat = categories.value?.find((c: Category) => c.value === item.category_id);
 
   name.value = item.name;
   amount.value = parseFloat(item.amount);
   date.value = props.selectedBit?.id ? new Date(item.date) : new Date();
   note.value = item.note;
   
-  // Handle case where category might not be found (e.g., shared bit with different categories)
   if (cat) {
     category.value = cat;
   } else if (item.category_name) {
-    // If category not found but we have a category name, create a temporary category object
     category.value = {
       name: item.category_name,
-      value: item.category_id
+      value: item.category_id || '',
     };
   } else {
     category.value = null;
@@ -277,13 +297,13 @@ const deleteExpense = async () => {
 
   deleting.value = true;
   try {
-    const response = await $fetch(`/api/fin/${route?.params?.id}/bit`, {
+    const response = await $fetch<ApiResponse>(`/api/fin/${route?.params?.id}/bit`, {
       method: 'DELETE',
       headers: useRequestHeaders(['cookie']),
-      body: { id: props.selectedBit.id }, // Send ID in body
+      body: { id: props.selectedBit.id },
     });
 
-    if (!response?.ok) {
+    if (!response?.message || response.message !== "success") {
       throw new Error('Failed to delete expense');
     }
 
@@ -294,9 +314,9 @@ const deleteExpense = async () => {
       life: 3000,
     });
 
-    props.refreshItems(); // Refresh the list in the parent component
-    emit('update:openDialog', false); // Close the dialog
-    resetForm(); // Reset form state
+    props.refreshItems();
+    emit('update:openDialog', false);
+    resetForm();
 
   } catch (error: any) {
     console.error('Error deleting expense:', error);

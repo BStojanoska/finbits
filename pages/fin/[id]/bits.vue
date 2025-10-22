@@ -52,13 +52,7 @@
             {{ bit.name }}
           </div>
           <div class="hover:cursor-pointer" @click="selectedBit = bit">
-            {{
-              new Intl.NumberFormat("de-DE", {
-                style: "decimal",
-                maximumFractionDigits: 2,
-                minimumFractionDigits: 2,
-              }).format(bit.amount)
-            }}
+              {{ bit.amount }}
           </div>
           <div class="hover:cursor-pointer" @click="selectedBit = bit">
             {{ bit.category_name }}
@@ -111,10 +105,13 @@ interface FinDetails {
 }
 
 interface Bit {
-  id: string | number;
+  id: string;
   name: string;
-  amount: number;
+  amount: string;
   category_name: string;
+  category_id?: string;
+  date: string;
+  note: string;
 }
 
 interface CategoryTotal {
