@@ -1,4 +1,5 @@
 <template>
+  <ChartComponent :categoryTotals="bitsResponse?.categoryTotals || []" />
   <div class="flex flex-row justify-between items-center">
     <div>
       <div class="text-2xl mb-1">
@@ -93,6 +94,7 @@
 <script setup lang="ts">
 import { format } from "date-fns";
 import ShareModal from '~/components/ShareModal.vue';
+import { ChartComponent } from '#components';
 
 const route = useRoute();
 const finId = ref(route?.params?.id || "");
@@ -115,9 +117,17 @@ interface Bit {
   category_name: string;
 }
 
+interface CategoryTotal {
+  category_id: string | number;
+  category_name: string;
+  total_amount: number;
+  formatted_amount: string;
+}
+
 interface BitsResponse {
   results: Record<string, Bit[]>;
   totals: Record<string, number>;
+  categoryTotals: CategoryTotal[];
 }
 
 // Fetch fin details and get its refresh function

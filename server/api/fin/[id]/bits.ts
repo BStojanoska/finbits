@@ -1,7 +1,7 @@
 import { format } from "date-fns";
 import { db } from '~/server/db';
-import { eq, desc, and } from 'drizzle-orm';
-import { bitsTable, categoriesTable, finsTable, finSharesTable } from '~/server/db/schema'; // Added finSharesTable
+import { eq, desc, and, sum } from 'drizzle-orm';
+import { bitsTable, categoriesTable, finsTable, finSharesTable } from '~/server/db/schema';
 import { withSession } from "supertokens-node/custom";
 import { getUserDetails } from "~/server/utils/user"; // Changed to getUserDetails
 
@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
         .where(and(eq(finsTable.id, finId), eq(finsTable.user_id, userId)))
         .limit(1);
 
-      let isAuthorized = ownerCheck.length > 0;
+      let isAuthorized = ownerCheck.length   >   0;
 
       // 2. If not the owner, check if the fin is shared with the user
       if (!isAuthorized) {
@@ -69,7 +69,6 @@ export default defineEventHandler(async (event) => {
           created_at: bitsTable.created_at,
           category_id: bitsTable.category_id,
           fin_id: bitsTable.fin_id,
-          // Add the aliased category name
           category_name: categoriesTable.name,
         })
         .from(bitsTable)
@@ -77,7 +76,7 @@ export default defineEventHandler(async (event) => {
         .where(eq(bitsTable.fin_id, finId))
         .orderBy(desc(bitsTable.created_at));
 
-      const formattedByDate = formatByDate(results); // Use Drizzle results directly
+      const formattedByDate = formatByDate(results);
 
       const totals: { [key: string]: string } = {};
       Object.keys(formattedByDate).map((key) => {
@@ -93,10 +92,34 @@ export default defineEventHandler(async (event) => {
         return total;
       });
 
+      const categoryTotals = await db
+        .select({
+          category_id: bitsTable.category_id,
+          category_name: categoriesTable.name,
+          total_amount: sum(bitsTable.amount),
+        })
+        .from(bitsTable)
+        .leftJoin(categoriesTable, eq(bitsTable.category_id, categoriesTable.id))
+        .where(eq(bitsTable.fin_id, finId))
+        .groupBy(bitsTable.category_id, categoriesTable.name);
+
+      // Format category totals for display
+      const formattedCategoryTotals = categoryTotals.map(category => ({
+        category_id: category.category_id,
+        category_name: category.category_name || 'Uncategorized',
+        total_amount: parseFloat(category.total_amount || '0'),
+        formatted_amount: new Intl.NumberFormat('de-DE', {
+          style: "decimal",
+          maximumFractionDigits: 2,
+          minimumFractionDigits: 2,
+        }).format(parseFloat(category.total_amount || '0'))
+      }));
+
       return new Response(JSON.stringify({ 
         status: 200, 
         results: formattedByDate, 
-        totals: totals 
+        totals: totals,
+        categoryTotals: formattedCategoryTotals
       }), {
         status: 200,
         headers: { "Content-Type": "application/json" },

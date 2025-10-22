@@ -20,6 +20,7 @@
     "@nuxtjs/google-fonts": "^3.2.0",
     "@primevue/themes": "^4.0.1",
     "@types/uuid": "^10.0.0",
+    "chart.js": "^4.5.1",
     "date-fns": "^3.6.0",
     "dotenv": "^16.4.7",
     "drizzle-orm": "^0.41.0",
