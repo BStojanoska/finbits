@@ -1,6 +1,6 @@
 import { db } from '~/server/db';
-import { eq, and } from 'drizzle-orm';
-import { bitsTable, categoriesTable, finsTable } from '~/server/db/schema';
+import { eq, and, or } from 'drizzle-orm';
+import { bitsTable, categoriesTable, finSharesTable, finsTable } from '~/server/db/schema';
 import { v4 as uuidv4 } from 'uuid';
 import { withSession } from "supertokens-node/custom";
 import { getUserUUID } from "~/server/utils/user";
@@ -71,17 +71,27 @@ export default defineEventHandler(async (event) => {
         }
 
         const userId = await getUserUUID(supertokensId);
+        const userEmail = await getUserDetails(supertokensId).then(details => details.email);
 
         const finId = event?.context?.params?.id;
         if (!finId) {
           throw createError({ statusCode: 400, statusMessage: "Fin ID is required" });
         }
 
-        // First verify that the fin belongs to the user using the transaction
+        // First verify that the fin belongs to the user or is shared with them
         const finCheck = await tx
           .select({ id: finsTable.id })
           .from(finsTable)
-          .where(and(eq(finsTable.id, finId), eq(finsTable.user_id, userId)))
+          .leftJoin(finSharesTable, eq(finsTable.id, finSharesTable.fin_id))
+          .where(
+            and(
+            eq(finsTable.id, finId),
+              or(
+                eq(finsTable.user_id, userId), // User owns the fin
+                eq(finSharesTable.shared_with_user_email, userEmail) // User has access through sharing
+              )
+            )
+          )
           .limit(1);
 
         if (finCheck.length === 0) {
