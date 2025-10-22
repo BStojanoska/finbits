@@ -22,7 +22,7 @@
                 </span>
               </div>
             </div>
-            <div>
+            <div v-if="list?.is_owner ?? false">
               <Button
                 class="mr-4"
                 severity="secondary"
@@ -77,6 +77,7 @@ interface List {
   date_from: string;
   date_to: string;
   total_amount: number;
+  is_owner: boolean;
 }
 
 useHead({
