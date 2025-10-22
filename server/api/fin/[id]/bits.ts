@@ -92,6 +92,16 @@ export default defineEventHandler(async (event) => {
         return total;
       });
 
+      const totalSum = totals ? Object.values(totals).reduce((acc, val) => {
+        return acc + parseFloat(val.replace(/\./g, '').replace(',', '.'));
+      }, 0) : 0;
+
+      totals['overall'] = new Intl.NumberFormat('de-DE', {
+        style: "decimal",
+        maximumFractionDigits: 2,
+        minimumFractionDigits: 2,
+      }).format(totalSum);
+
       const categoryTotals = await db
         .select({
           category_id: bitsTable.category_id,
@@ -107,12 +117,12 @@ export default defineEventHandler(async (event) => {
       const formattedCategoryTotals = categoryTotals.map(category => ({
         category_id: category.category_id,
         category_name: category.category_name || 'Uncategorized',
-        total_amount: parseFloat(category.total_amount || '0'),
+        total_amount: parseFloat(category.total_amount || '0') / totalSum * 100, // percentage
         formatted_amount: new Intl.NumberFormat('de-DE', {
           style: "decimal",
           maximumFractionDigits: 2,
           minimumFractionDigits: 2,
-        }).format(parseFloat(category.total_amount || '0'))
+        }).format(parseFloat(category.total_amount || '0') / totalSum * 100) + '%',
       }));
 
       return new Response(JSON.stringify({ 

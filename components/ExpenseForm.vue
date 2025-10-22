@@ -187,9 +187,8 @@ const payload = {
       body: payload,  // Remove JSON.stringify, $fetch will handle it
     });
 
-    // Check for response.body.message instead of status
     // Check if the message is NOT success
-    if (response?.message !== "success") {
+    if (!response?.ok) {
       throw new Error("Error adding expense...");
     }
 
@@ -213,7 +212,7 @@ const payload = {
       life: 5000,
     });
   } finally {
-    creating.value = false; // Also reset creating if delete fails? Maybe not needed.
+    creating.value = false;
   }
 };
 
@@ -225,19 +224,35 @@ watch(
     }
   }
 );
-const editBit = (item: any) => {
+const editBit = async (item: any) => {
+  // Ensure categories are loaded before trying to find the category
+  if (!categories.value || categories.value.length === 0) {
+    await fetchCategories();
+  }
+  
   // Find category object using category_id from the item
-  const cat = categories.value.find((c: any) => c.value === item.category_id);
+  const cat = categories.value?.find((c: any) => c.value === item.category_id);
 
   name.value = item.name;
   amount.value = parseFloat(item.amount);
-  // Use item.date for the actual expense date
   date.value = props.selectedBit?.id ? new Date(item.date) : new Date();
   note.value = item.note;
-  // Set category.value to the full category object for AutoComplete
-  category.value = cat;
+  
+  // Handle case where category might not be found (e.g., shared bit with different categories)
+  if (cat) {
+    category.value = cat;
+  } else if (item.category_name) {
+    // If category not found but we have a category name, create a temporary category object
+    category.value = {
+      name: item.category_name,
+      value: item.category_id
+    };
+  } else {
+    category.value = null;
+  }
+  
   emit("update:openDialog", true);
-}; // End of editBit
+};
 
 const confirmDelete = (event: any) => {
   confirm.require({
@@ -255,7 +270,7 @@ const confirmDelete = (event: any) => {
       // Optional: Handle rejection
     }
   });
-}; // End of confirmDelete
+};
 
 const deleteExpense = async () => {
   if (!props.selectedBit?.id) return;
@@ -268,8 +283,8 @@ const deleteExpense = async () => {
       body: { id: props.selectedBit.id }, // Send ID in body
     });
 
-    if (response?.message !== 'success') {
-      throw new Error(response?.message || 'Failed to delete expense');
+    if (!response?.ok) {
+      throw new Error('Failed to delete expense');
     }
 
     toast.add({
