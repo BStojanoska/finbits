@@ -194,8 +194,8 @@ const createExpense = async (e: Event) => {
     note: note.value.trim(),
     category_id: (category.value as Category)?.value || null,
     category_name: (category.value as Category)?.name
-      ? (category.value as Category).name.trim()
-      : typeof category.value === 'string' ? category.value.trim() : null,
+      ? (category.value as Category).name.trim().toLowerCase()
+      : typeof category.value === 'string' ? category.value.trim().toLowerCase() : null,
   };
 
   let method: "POST" | "PUT" = "POST";

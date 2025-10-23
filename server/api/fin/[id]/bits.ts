@@ -1,7 +1,7 @@
 import { format, parseISO } from "date-fns";
 import { db } from '~/server/db';
 import { eq, desc, and, sum } from 'drizzle-orm';
-import { bitsTable, categoriesTable, finsTable, finSharesTable } from '~/server/db/schema';
+import { bitsTable, categoriesTable, finsTable, finSharesTable, usersTable } from '~/server/db/schema';
 import { withSession } from "supertokens-node/custom";
 import { getUserDetails } from "~/server/utils/user"; // Changed to getUserDetails
 
@@ -35,7 +35,7 @@ export default defineEventHandler(async (event) => {
         .where(and(eq(finsTable.id, finId), eq(finsTable.user_id, userId)))
         .limit(1);
 
-      let isAuthorized = ownerCheck.length   >   0;
+      let isAuthorized = ownerCheck.length > 0;
 
       // 2. If not the owner, check if the fin is shared with the user
       if (!isAuthorized) {
@@ -66,15 +66,15 @@ export default defineEventHandler(async (event) => {
           amount: bitsTable.amount,
           date: bitsTable.date,
           note: bitsTable.note,
-          created_at: bitsTable.created_at,
           category_id: bitsTable.category_id,
-          fin_id: bitsTable.fin_id,
           category_name: categoriesTable.name,
+          user_email: usersTable.email,
         })
         .from(bitsTable)
         .leftJoin(categoriesTable, eq(bitsTable.category_id, categoriesTable.id))
+        .leftJoin(usersTable, eq(bitsTable.user_id, usersTable.id))
         .where(eq(bitsTable.fin_id, finId))
-        .orderBy(desc(bitsTable.created_at));
+        .orderBy(desc(bitsTable.date));
 
       const formattedByDate = formatByDate(results);
 

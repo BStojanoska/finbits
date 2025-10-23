@@ -46,8 +46,11 @@
           {{ bitsResponse?.totals[date] }}
         </div>
       </div>
-      <div class="grid grid-cols-3">
+      <div class="grid grid-cols-4">
         <template v-for="bit in bits" :key="bit.id">
+          <div class="hover:cursor-pointer" @click="selectedBit = bit">
+            <Avatar :label="bit.user_email ? bit.user_email?.slice(0,1).toUpperCase() : '?'" class="mr-2" style="background-color: #dee9fc; color: #1a2551" shape="circle" />
+          </div>
           <div class="hover:cursor-pointer" @click="selectedBit = bit">
             {{ bit.name }}
           </div>
@@ -89,6 +92,7 @@
 import { format } from "date-fns";
 import ShareModal from '~/components/ShareModal.vue';
 import { ChartComponent } from '#components';
+import Avatar from 'primevue/avatar';
 
 const route = useRoute();
 const finId = ref(route?.params?.id || "");
@@ -112,6 +116,7 @@ interface Bit {
   category_id?: string;
   date: string;
   note: string;
+  user_email: string | null;
 }
 
 interface CategoryTotal {

@@ -33,6 +33,7 @@ export const bitsTable = pgTable("bits", {
   created_at: timestamp().notNull().defaultNow(),
   category_id: varchar({ length: 255 }).references(() => categoriesTable.id),
   fin_id: uuid('fin_id').references(() => finsTable.id),
+  user_id: varchar({ length: 255 }).references(() => usersTable.id),
 });
 
 export const finSharesTable = pgTable("fin_shares", {
